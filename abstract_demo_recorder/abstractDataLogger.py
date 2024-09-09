@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
-from states_and_events import DataLoggerCommands, DataLoggerStates
+from abstract_demo_recorder.statesAndEvents import DataLoggerCommands, DataLoggerStates
 
 
 class AbstractDataLogger(ABC):
@@ -139,3 +139,11 @@ class AbstractDataLogger(ABC):
             self.logger.warning("Received unknown command.")
             information = "Data logger received unknown command."
         return self.data_logger_state, information
+
+    def cleanup(self):
+        """
+        Destructor to ensure any resources are properly released.
+        """
+        self.discard_data()
+        self.stop_logging()
+        self.logger.info("Exited Data Logger")

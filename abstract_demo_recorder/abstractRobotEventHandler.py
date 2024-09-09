@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import logging
-from states_and_events import RobotStates, RobotCommands
+from abstract_demo_recorder.statesAndEvents import RobotStates, RobotCommands
 
 class AbstractRobotEventHandler(ABC):
     def __init__(self):
@@ -81,3 +81,6 @@ class AbstractRobotEventHandler(ABC):
             self.logger.warning("Received unknown command.")
             information = "Robot received unknown command."
         return self.robot_state, information
+    
+    def cleanup(self):
+        self.logger.info("Exited Robot Event Handler")

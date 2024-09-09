@@ -1,10 +1,10 @@
-from abstract_demo_recorder.abstractRobotEventHandler
+from abstract_demo_recorder.abstractRobotEventHandler import AbstractRobotEventHandler
 
 class PepperEventHandler(AbstractRobotEventHandler):
 
-    def __init__(self, external_reset_function=None):
+    def __init__(self):
         super().__init__()
-
+        
         self.robot = "Pepper"
 
 

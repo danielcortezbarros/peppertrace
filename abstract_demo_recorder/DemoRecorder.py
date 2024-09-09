@@ -1,15 +1,15 @@
 from queue import Queue
 import logging
-from states_and_events import (
+from abstract_demo_recorder.statesAndEvents import (
     Event,
     EventType,
     DataLoggerCommands,
     RobotCommands,
 )
-from abstractDataLogger import AbstractDataLogger
-from abstractRobotEventHandler import AbstractRobotEventHandler
-from abstractUserInputHandler import AbstractUserInputHandler
-from abstractInformationDisplay import AbstractInformationDisplay
+from abstract_demo_recorder.abstractDataLogger import AbstractDataLogger
+from abstract_demo_recorder.abstractRobotEventHandler import AbstractRobotEventHandler
+from abstract_demo_recorder.abstractUserInputHandler import AbstractUserInputHandler
+from abstract_demo_recorder.abstractInformationDisplay import AbstractInformationDisplay
 import json
 
 logging.basicConfig(
@@ -33,7 +33,6 @@ class DemoRecorder:
         self.user_input_handler = user_input_handler
         self.robot_event_handler = robot_event_handler
         self.data_logger = data_logger
-        self.visualization = information_display
         self.user_input_handler.set_event_queue(self.event_queue)
 
         self.information_display = information_display
@@ -52,6 +51,10 @@ class DemoRecorder:
 
             if event.event_type == EventType.TERMINATE:
                 # Terminate the loop when encountering a termination event
+                self.user_input_handler.cleanup()
+                self.robot_event_handler.cleanup()
+                self.data_logger.cleanup()
+                self.information_display.cleanup()
                 self.logger.info("Recording session terminated")
                 break
 

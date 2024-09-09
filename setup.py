@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'demo_recorder=pepper_demonstration_recorder.pepperRecordingApplication:main',
         ],
     },
 )

@@ -27,3 +27,6 @@ class AbstractInformationDisplay(ABC):
         This function should be implemented according to the user's specific visualization setup e.g. GUI.
         """
         raise NotImplementedError
+    
+    def cleanup(self):
+        self.logger.info("Exited Information Display")

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 from queue import Queue
-from states_and_events import Event, EventType
+from abstract_demo_recorder.statesAndEvents import Event, EventType
 
 
 
@@ -49,3 +49,6 @@ class AbstractUserInputHandler(ABC):
             self.logger.info(f"Event posted. Type: {event_type}, Command: {command}")
         else:
             self.logger.error("Event queue is not set.")
+
+    def cleanup(self):
+        self.logger.info("Exited Input Handler")
