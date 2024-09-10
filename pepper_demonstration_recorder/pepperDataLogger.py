@@ -7,7 +7,7 @@ from abstract_demo_recorder.abstractDataLogger import AbstractDataLogger
 import shutil
 
 class ROS2BagLogger(AbstractDataLogger):
-    def __init__(self, topics_list=["lfd_system_logs"], data_dir="/home/dani/Music"):
+    def __init__(self, topics_list=["/lfd_system_logs"], data_dir="/home/dani/Music"):
         super().__init__()
 
         # Initialize ROS node (for the main process)
@@ -30,7 +30,7 @@ class ROS2BagLogger(AbstractDataLogger):
         self.record_options = RecordOptions()
         self.record_options.all = False  # Do not record all topics
         self.record_options.topics = self.topics_list  # Record only the specified topics
-        self.record_options.is_discovery_disabled = True
+        self.record_options.is_discovery_disabled = False
 
     def prepare_for_logging(self):
         """
@@ -47,6 +47,8 @@ class ROS2BagLogger(AbstractDataLogger):
         Create a new ROS 2 node in the new process.
         """
         node = rclpy.create_node('ros2bag_logger_process')  # Create a new ROS 2 node for this process
+        available_topics = node.get_topic_names_and_types()
+        print("Topics: available topics: ", available_topics)
         node.get_logger().info("Started recording in separate process")
         
         # Create a new Recorder instance and start recording

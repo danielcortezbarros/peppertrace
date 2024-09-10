@@ -1,7 +1,8 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.serialization import deserialize_message
 from rosbag2_py import SequentialReader, StorageOptions, ConverterOptions
-from rosidl_runtime_py.utilities import get_message
+from std_msgs.msg import String
 import os
 
 class BagReader(Node):
@@ -31,17 +32,25 @@ class BagReader(Node):
         if not topics_and_types:
             self.get_logger().warn(f"No topics were found in the bag file: {db_file}")
         else:
-            self.get_logger().info(f"Available topics: {topics_and_types}")
+            # Log the available topics in a readable format
+            for topic_metadata in topics_and_types:
+                self.get_logger().info(f"Topic: {topic_metadata.name}, Type: {topic_metadata.type}")
 
         # Read messages
         while self.reader.has_next():
             (topic, data, t) = self.reader.read_next()
 
-            # Get the message type dynamically using the topic type
-            message_type = get_message(topics_and_types[0].type)
-            message = message_type().deserialize(data)
+            # Filter for the specific topic (lfd_system_logs)
+            if topic == '/lfd_system_logs':
+                # Deserialize the message as std_msgs/String
+                message = deserialize_message(data, String)
 
-            self.get_logger().info(f"Received message on topic {topic} at time {t}: {message}")
+                # Log the message content
+                self.get_logger().info(f"Received message on topic {topic} at time {t}: {message.data}")
+            else:
+                pass
+
+            print("Next")
 
 
 def main(args=None):
