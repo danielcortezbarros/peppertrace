@@ -12,9 +12,9 @@ def main():
     pepper_topics = ["lfd_system_logs"]
 
     robot_control_handler = PepperEventHandler()
-    data_logger = ROS2BagLogger(pepper_topics)
     information_display = GuiInfoDisplay()
     user_input = KeyboardInputHandler()
+    data_logger = ROS2BagLogger(pepper_topics)
 
     executor = rclpy.executors.MultiThreadedExecutor()
     executor.add_node(information_display.node)

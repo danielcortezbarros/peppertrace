@@ -48,7 +48,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     # Path to the demo_1_0.db3 file
-    bag_file = '/home/dani/Music/demo_2/demo_2_0.db3'
+    bag_file = '/home/dani/Music/demo_1/demo_1_0.db3'
 
     # Create the BagReader node
     bag_reader_node = BagReader(bag_file)
