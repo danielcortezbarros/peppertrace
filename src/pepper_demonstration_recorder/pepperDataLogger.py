@@ -1,17 +1,15 @@
-import multiprocessing
-import rclpy
-from rosbag2_py import Recorder, StorageOptions, RecordOptions
+#!/usr/bin/env python3
+import rospy
+import rosbag
 import os
 from abstract_demo_recorder.statesAndEvents import DataLoggerStates
 from abstract_demo_recorder.abstractDataLogger import AbstractDataLogger
 import shutil
+import multiprocessing
 
-class ROS2BagLogger(AbstractDataLogger):
+class ROSBagLogger(AbstractDataLogger):
     def __init__(self, topics_list=["/lfd_system_logs"], data_dir="/home/dani/Music"):
         super().__init__()
-
-        # Initialize ROS node (for the main process)
-        self.node = rclpy.create_node('ros2bag_logger')
 
         # List of topics to record
         self.topics_list = topics_list
@@ -27,57 +25,74 @@ class ROS2BagLogger(AbstractDataLogger):
         # Recorder for managing bag recording
         self.record_process = None  # Process for running recording
 
-        self.record_options = RecordOptions()
-        self.record_options.all = False  # Do not record all topics
-        self.record_options.topics = self.topics_list  # Record only the specified topics
-        self.record_options.is_discovery_disabled = False
-
     def prepare_for_logging(self):
         """
-        Set up the ROS bag recorder and configure storage and record options.
+        Set up the ROS bag recorder and configure storage options.
         This method is called every time a new directory is created.
         """
-        dir = os.path.join(self.data_dir, f"demo_{self.demo_counter}")
-        storage_options = StorageOptions(uri=dir, storage_id='sqlite3')
-        return storage_options
+        dir_path = os.path.join(self.data_dir, f"demo_{self.demo_counter}")
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        return dir_path
 
-    def _run_recording(self, storage_options, record_options):
+    def _run_recording(self, bag_file, topics_list):
         """
         Function to run the recording in a separate process.
-        Create a new ROS 2 node in the new process.
+        Create a new ROS 1 node in the new process.
         """
-        node = rclpy.create_node('ros2bag_logger_process')  # Create a new ROS 2 node for this process
-        available_topics = node.get_topic_names_and_types()
-        print("Topics: available topics: ", available_topics)
-        node.get_logger().info("Started recording in separate process")
+         # Get all available topics and their message types
+        available_topics_list = rospy.get_published_topics()
         
-        # Create a new Recorder instance and start recording
-        recorder = Recorder()
-        recorder.record(storage_options, record_options)
-    
-        
-        node.get_logger().info("Finished recording in separate process")
+        # Create a dictionary where keys are topic names and values are message types
+        available_topics = {topic: msg_type for topic, msg_type in available_topics_list}
+        rospy.loginfo(f"Available topics: {available_topics}")
+
+        # Open the bag file for recording
+        with rosbag.Bag(bag_file, 'w') as bag:
+            def callback(msg, topic):
+                """
+                Callback to write the message to the bag file.
+                """
+                rospy.loginfo(f"Recording message on topic: {topic}")
+                bag.write(topic, msg)
+
+            # Create subscribers for the topics in topics_list
+            subscribers = []
+            for topic in topics_list:
+                if topic in available_topics:
+                    msg_type_str = available_topics[topic]  # Get the message type as a string
+                    msg_class = rospy.get_message_class(msg_type_str)  # Convert string to message class
+
+                    if msg_class is not None:
+                        # Subscribe to the topic and add a callback for recording
+                        subscribers.append(rospy.Subscriber(topic, msg_class, callback, callback_args=topic))
+                    else:
+                        rospy.logwarn(f"Could not find message class for topic: {topic}")
+                else:
+                    rospy.logwarn(f"Topic {topic} is not available.")
+
 
     def start_logging(self):
         """
         Start recording the ROS bag in a separate process.
         """
         if self.status == DataLoggerStates.NOT_RECORDING:
-            storage_options = self.prepare_for_logging()  # Prepare storage options
-            record_options = self.record_options  # Use the configured record options
-            
+            # Prepare the directory to save the bag file
+            dir_path = self.prepare_for_logging()
+            bag_file = os.path.join(dir_path, f"demo_{self.demo_counter}.bag")
+
             self.status = DataLoggerStates.RECORDING
-            
+
             # Run recording in a separate process and pass the options as arguments
             self.record_process = multiprocessing.Process(
                 target=self._run_recording, 
-                args=(storage_options, record_options)
+                args=(bag_file, self.topics_list)
             )
             self.record_process.start()
             self.data_exists = True
-            self.logger.info(f"Started recording")
+            rospy.loginfo("Started recording")
         else:
-            self.logger.info("Logger is already recording or there is data to be saved/discarded.")
+            rospy.loginfo("Logger is already recording or there is data to be saved/discarded.")
 
     def stop_logging(self):
         """
@@ -85,16 +100,16 @@ class ROS2BagLogger(AbstractDataLogger):
         Gracefully terminate the recording process.
         """
         if self.status == DataLoggerStates.RECORDING:
-            self.logger.info("Stopping the recording process...")
+            rospy.loginfo("Stopping the recording process...")
             if self.record_process:
                 self.record_process.terminate()  # Terminate the process
                 self.record_process.join()  # Wait for the process to fully exit
 
             self.record_process = None  # Clear the reference to the process
             self.status = DataLoggerStates.NOT_RECORDING
-            self.logger.info("Stopped recording successfully")
+            rospy.loginfo("Stopped recording successfully")
         else:
-            self.logger.info("No recording in progress to stop.")
+            rospy.loginfo("No recording in progress to stop.")
 
     def save_data(self):
         """
@@ -102,12 +117,12 @@ class ROS2BagLogger(AbstractDataLogger):
         """
         if self.data_exists:
             final_path = os.path.join(self.data_dir, f"demo_{self.demo_counter}")
-            self.logger.info(f"Data saved to: {final_path}")
+            rospy.loginfo(f"Data saved to: {final_path}")
             self.demo_counter += 1  # Increment counter for the next demo
             self.data_exists = False
             return True
         else:
-            self.logger.info("No data to save.")
+            rospy.loginfo("No data to save.")
             return False
 
     def discard_data(self):
@@ -118,14 +133,14 @@ class ROS2BagLogger(AbstractDataLogger):
             temp_dir = os.path.join(self.data_dir, f"demo_{self.demo_counter}")
             try:
                 shutil.rmtree(temp_dir)
-                self.logger.info("Recorded data discarded.")
+                rospy.loginfo("Recorded data discarded.")
                 self.data_exists = False
                 return True
             except Exception as e:
-                self.logger.error(f"Failed to discard data: {e}")
+                rospy.logerr(f"Failed to discard data: {e}")
                 return False
         else:
-            self.logger.info("No data to discard.")
+            rospy.loginfo("No data to discard.")
             return False
 
     def reset(self):
@@ -135,7 +150,7 @@ class ROS2BagLogger(AbstractDataLogger):
         self.stop_logging()
         self.discard_data()
         self.status = DataLoggerStates.NOT_RECORDING
-        self.logger.info("Data logger reset.")
+        rospy.loginfo("Data logger reset.")
 
     def pause_logging(self):
         return super().pause_logging()

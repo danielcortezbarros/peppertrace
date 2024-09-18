@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from abstract_demo_recorder.abstractRobotEventHandler import AbstractRobotEventHandler
 
 class PepperEventHandler(AbstractRobotEventHandler):

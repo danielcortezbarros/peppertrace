@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from abstract_demo_recorder.abstractUserInputHandler import AbstractUserInputHandler
 from abstract_demo_recorder.statesAndEvents import EventType, DataLoggerCommands, RobotCommands
 from pynput import keyboard
