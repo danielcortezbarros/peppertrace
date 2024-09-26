@@ -8,7 +8,7 @@ class GuiInfoDisplay(AbstractInformationDisplay):
         super().__init__()
 
         # Create a publisher
-        self.info_publisher = rospy.Publisher("lfd_system_logs", String, queue_size=10)
+        self.info_publisher = rospy.Publisher("/lfd_system_logs", String, queue_size=10)
 
     def display_information(self, information):
         msg = String()

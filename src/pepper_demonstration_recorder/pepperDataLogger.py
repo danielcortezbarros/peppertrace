@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 import rospy
-import rosbag
+import rospkg
 import os
 from abstract_demo_recorder.statesAndEvents import DataLoggerStates
 from abstract_demo_recorder.abstractDataLogger import AbstractDataLogger
 import shutil
-import multiprocessing
+import subprocess
 
-class ROSBagLogger(AbstractDataLogger):
-    def __init__(self, topics_list=["/lfd_system_logs"], data_dir="/home/dani/Music"):
+class PepperROS1Logger(AbstractDataLogger):
+    def __init__(self, topics_list, data_dir, demo_name):
         super().__init__()
 
         # List of topics to record
         self.topics_list = topics_list
-
-        # Base directory for storing recorded data
         self.data_dir = data_dir  # Final destination for saved data
+        self.demo_name = demo_name
         self.demo_counter = 1  # Counter for demo directories
+
+        # Get the path to the package
+        package_path = rospkg.RosPack().get_path('pepper_demonstration_recorder')
+
+        # Construct the path to the config file relative to the package path
+        self.rosbag_script_path = os.path.join(package_path, 'src', 'pepper_demonstration_recorder', 'rosBagRecorder.py')
 
         # State and flags
         self.data_exists = False
@@ -30,69 +35,38 @@ class ROSBagLogger(AbstractDataLogger):
         Set up the ROS bag recorder and configure storage options.
         This method is called every time a new directory is created.
         """
-        dir_path = os.path.join(self.data_dir, f"demo_{self.demo_counter}")
+        dir_path = os.path.join(self.data_dir, self.demo_name)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
         return dir_path
 
-    def _run_recording(self, bag_file, topics_list):
-        """
-        Function to run the recording in a separate process.
-        Create a new ROS 1 node in the new process.
-        """
-         # Get all available topics and their message types
-        available_topics_list = rospy.get_published_topics()
-        
-        # Create a dictionary where keys are topic names and values are message types
-        available_topics = {topic: msg_type for topic, msg_type in available_topics_list}
-        rospy.loginfo(f"Available topics: {available_topics}")
-
-        # Open the bag file for recording
-        with rosbag.Bag(bag_file, 'w') as bag:
-            def callback(msg, topic):
-                """
-                Callback to write the message to the bag file.
-                """
-                rospy.loginfo(f"Recording message on topic: {topic}")
-                bag.write(topic, msg)
-
-            # Create subscribers for the topics in topics_list
-            subscribers = []
-            for topic in topics_list:
-                if topic in available_topics:
-                    msg_type_str = available_topics[topic]  # Get the message type as a string
-                    msg_class = rospy.get_message_class(msg_type_str)  # Convert string to message class
-
-                    if msg_class is not None:
-                        # Subscribe to the topic and add a callback for recording
-                        subscribers.append(rospy.Subscriber(topic, msg_class, callback, callback_args=topic))
-                    else:
-                        rospy.logwarn(f"Could not find message class for topic: {topic}")
-                else:
-                    rospy.logwarn(f"Topic {topic} is not available.")
-
 
     def start_logging(self):
         """
-        Start recording the ROS bag in a separate process.
+        Start recording the ROS bag in a separate process for each topic.
         """
         if self.status == DataLoggerStates.NOT_RECORDING:
-            # Prepare the directory to save the bag file
+            # Prepare the directory to save the bag files
             dir_path = self.prepare_for_logging()
-            bag_file = os.path.join(dir_path, f"demo_{self.demo_counter}.bag")
 
             self.status = DataLoggerStates.RECORDING
+            self.record_processes = []  # Store references to processes for each topic
 
-            # Run recording in a separate process and pass the options as arguments
-            self.record_process = multiprocessing.Process(
-                target=self._run_recording, 
-                args=(bag_file, self.topics_list)
-            )
-            self.record_process.start()
+            # Start a recording process for each topic
+            for topic in self.topics_list:
+                bag_file = os.path.join(dir_path, f"demo_{self.demo_counter}{topic.replace('/', '_')}.bag")
+
+                # Start recording by calling the external script for each topic
+                process = subprocess.Popen(['python3', self.rosbag_script_path, bag_file, topic])
+                self.record_processes.append(process)  # Track the process for later management
+
+                rospy.loginfo(f"Started recording {topic} in {bag_file}")
+
             self.data_exists = True
-            rospy.loginfo("Started recording")
+            rospy.loginfo("Started recording all topics")
         else:
             rospy.loginfo("Logger is already recording or there is data to be saved/discarded.")
+
 
     def stop_logging(self):
         """
@@ -101,11 +75,11 @@ class ROSBagLogger(AbstractDataLogger):
         """
         if self.status == DataLoggerStates.RECORDING:
             rospy.loginfo("Stopping the recording process...")
-            if self.record_process:
-                self.record_process.terminate()  # Terminate the process
-                self.record_process.join()  # Wait for the process to fully exit
+            for process in self.record_processes:
+                process.terminate()  # Terminate the process
+                process.wait()  # Wait for the process to fully exit
 
-            self.record_process = None  # Clear the reference to the process
+            self.record_processes = [] # Clear the reference to the process
             self.status = DataLoggerStates.NOT_RECORDING
             rospy.loginfo("Stopped recording successfully")
         else:
@@ -116,9 +90,9 @@ class ROSBagLogger(AbstractDataLogger):
         Save the recorded data.
         """
         if self.data_exists:
-            final_path = os.path.join(self.data_dir, f"demo_{self.demo_counter}")
+            final_path = os.path.join(self.data_dir, self.demo_name, f"demo_{self.demo_counter}.bag")
             rospy.loginfo(f"Data saved to: {final_path}")
-            self.demo_counter += 1  # Increment counter for the next demo
+            self.demo_counter += 1  # Increment counter for the next demos
             self.data_exists = False
             return True
         else:
@@ -130,14 +104,14 @@ class ROSBagLogger(AbstractDataLogger):
         Discard the recorded data by removing the temporary directory.
         """
         if self.data_exists:
-            temp_dir = os.path.join(self.data_dir, f"demo_{self.demo_counter}")
+            temp_dir = os.path.join(self.data_dir, self.demo_name, f"demo_{self.demo_counter}.bag")
             try:
                 shutil.rmtree(temp_dir)
                 rospy.loginfo("Recorded data discarded.")
                 self.data_exists = False
                 return True
             except Exception as e:
-                rospy.logerr(f"Failed to discard data: {e}")
+                rospy.logwarn(f"Failed to discard data, file probably does not exist: {e}")
                 return False
         else:
             rospy.loginfo("No data to discard.")

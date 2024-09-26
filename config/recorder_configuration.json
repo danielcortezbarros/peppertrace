@@ -1,0 +1,13 @@
+{
+    "data_logger": {
+        "topics_list": [
+            "/joint_states", 
+            "/pepper_dcm/RightArm_controller/command",
+            "/pepper_dcm/LeftArm_controller/command"
+
+        ],
+        "data_dir":"/root/workspace/demo_data",
+        "demo_name":"demo09232024"
+    }
+
+}

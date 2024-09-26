@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from abstract_demo_recorder.abstractUserInputHandler import AbstractUserInputHandler
 from abstract_demo_recorder.statesAndEvents import EventType, DataLoggerCommands, RobotCommands
-from pynput import keyboard
+from pynput import keyboard, mouse
 
 class KeyboardInputHandler(AbstractUserInputHandler):
     def __init__(self, freq=50):
@@ -94,3 +94,44 @@ class KeyboardInputHandler(AbstractUserInputHandler):
     def process_input(self):
         pass
 
+
+
+class MouseInputHandler(AbstractUserInputHandler):
+    def __init__(self, freq=50):
+        super().__init__()
+
+        # Use only regular keys for the input mapping
+        self.freq = freq
+        self.input_mapping = {
+            'START': 'LEFT',
+            'SAVE': 'RIGHT',
+        }
+
+        # Start the listener directly without extra threads
+        self.listener = mouse.Listener(on_click=self.on_click)
+        self.listener.start()
+
+        self.recording = False
+
+    def on_click(self, x, y, button, pressed):
+        if pressed:
+            if button == mouse.Button.left:
+                if self.recording == False:
+                    self.logger.info("Starting Data Logging")
+                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START)
+                    self.recording = True
+                else:
+                    self.logger.info("Saving Data")
+                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SAVE)
+                    self.recording = False
+            elif button == mouse.Button.button9:
+                self.logger.info("Detected scroll, terminating listener.")
+                self.listener.stop() 
+                self.post_event(EventType.TERMINATE)
+
+
+    def get_input_mapping(self) -> dict:
+        return self.input_mapping
+    
+    def process_input(self):
+        pass
