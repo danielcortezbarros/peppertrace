@@ -1,0 +1,14 @@
+{
+    "data_logger": {
+        "topics_list": [
+            "/joint_states", 
+            "/pepper_dcm/LeftArm_controller/command"
+
+        ],
+        "data_dir":"/root/workspace/demo_data",
+        "demo_name":"testing"
+    },
+    "gui_system_logs_topic": "/gui/system_logs",
+    "gui_commands_topic": "/gui/system_logs"
+
+}

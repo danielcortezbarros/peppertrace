@@ -1,24 +1,25 @@
-<?xml version="1.0"?>
 <package format="2">
-  <name>pepper_demonstration_recorder</name>
-  <version>0.0.1</version>
-  <description>A ROS package for recording demonstrations on the Pepper robot</description>
+  <name>programming_from_demonstration</name>
+  <version>0.1.0</version>
+  <description>Package for programming from demonstration</description>
 
-  <maintainer email="you@example.com">Your Name</maintainer>
-  <license>BSD</license>
+  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <license>MIT</license>
 
-  <!-- Dependencies -->
+  <!-- Ensure catkin is listed as a build tool -->
   <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Add all dependencies needed by the subcomponents -->
   <build_depend>rospy</build_depend>
   <build_depend>std_msgs</build_depend>
-  <build_depend>message_generation</build_depend>
-
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
+
+  <!-- Add additional dependencies as needed -->
+  <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
 
-  <!-- Ensure message/service generation -->
   <export>
-    <build_type>catkin</build_type>
+    <!-- Additional export details if required -->
   </export>
 </package>

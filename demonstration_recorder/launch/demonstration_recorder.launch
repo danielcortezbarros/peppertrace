@@ -1,0 +1,4 @@
+<launch>
+    <!-- Run the skeletal model application -->
+    <node pkg="programming_from_demonstration" type="pepper_recording_application.py" name="pepper_recording_application" output="screen" />
+</launch>

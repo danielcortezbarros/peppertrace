@@ -1,0 +1,5 @@
+{
+    "gui_system_logs_topic": "/gui/system_logs",
+    "gui_commands_topic": "/gui/commands",
+    "skeletal_model_feed_topic": "/mediapipe/image_feed"
+}
