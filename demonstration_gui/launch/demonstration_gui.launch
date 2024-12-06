@@ -1,4 +1,4 @@
 <launch>
     <!-- Start the GUI application as a standalone Python script -->
-    <node name="pepper_demonstration_gui" pkg="programming_from_demonstration" type="gui_application.py" output="screen"/>
+    <node name="pepper_demonstration_gui" pkg="programming_by_demonstration" type="gui_application.py" output="screen"/>
 </launch>

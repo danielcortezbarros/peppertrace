@@ -64,7 +64,7 @@ class PepperRobotEventHandler():
 
         command = [
             "roslaunch",
-            "programming_from_demonstration",
+            "programming_by_demonstration",
             "skeletal_model.launch"
         ]
         self.demonstrate_process = launch_ros_subprocess(command)

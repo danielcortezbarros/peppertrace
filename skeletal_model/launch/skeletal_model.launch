@@ -2,7 +2,7 @@
     <!-- Group to ensure nodes terminate together -->
     <group>
         <!-- Terminate the entire launch if any node in this group dies -->
-        <node name="skeletal_model_application" pkg="programming_from_demonstration" type="skeletal_model_application.py" output="screen" required="true" />
+        <node name="skeletal_model_application" pkg="programming_by_demonstration" type="skeletal_model_application.py" output="screen" required="true" />
 
         <include file="$(find realsense2_camera)/launch/rs_camera.launch">
             <arg name="align_depth" value="true" />

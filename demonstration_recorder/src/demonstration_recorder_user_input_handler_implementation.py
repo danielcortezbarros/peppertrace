@@ -30,7 +30,7 @@ class GuiInputHandler:
 
         # Define input map
         self.input_map = {
-            'Teleop': {
+            'Demonstrate': {
                 'Start': 'Left mouse',
                 'Stop': 'Left mouse again'
             },
@@ -65,19 +65,19 @@ class GuiInputHandler:
         if command.startswith("CONNECT"):
             _, robot_ip, port = command.split(",")
             self.post_event(EventType.ROBOT_CONTROL, RobotCommands.CONNECT, args={'robot_ip': robot_ip, 'port': port})
-        elif command == "START_TELEOP":
-            self.post_event(EventType.ROBOT_CONTROL, RobotCommands.START_TELEOP)
-        elif command == "STOP_TELEOP":
-            self.post_event(EventType.ROBOT_CONTROL, RobotCommands.STOP_TELEOP)
+        elif command == "START_DEMONSTRATE":
+            self.post_event(EventType.ROBOT_CONTROL, RobotCommands.START_DEMONSTRATE)
+        elif command == "STOP_DEMONSTRATE":
+            self.post_event(EventType.ROBOT_CONTROL, RobotCommands.STOP_DEMONSTRATE)
         elif command == "START_RECORD":
             self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START_RECORD)
         elif command == "STOP_RECORD":
             self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.STOP_RECORD)
         elif command.startswith("RECORD"):
             topics = eval(command[len("RECORD"):])  # Convert the string to a list
-            self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.CHANGE_TOPICS, args={"topics":topics})
+            self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SET_TOPICS, args={"topics":topics})
         else:
-            rospy.logwarn("Unknown GUI command")
+            rospy.logwarn(f"Unknown GUI command: {command}")
 
     def get_input_map(self) -> dict:
         return self.input_map

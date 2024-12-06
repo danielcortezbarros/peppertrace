@@ -28,7 +28,7 @@ class EventType(Enum):
 class DataLoggerCommands(Enum):
     START_RECORD = 0
     STOP_RECORD = 1
-    CHANGE_TOPICS = 2
+    SET_TOPICS = 2
 
 
 class DataLoggerStates(Enum):

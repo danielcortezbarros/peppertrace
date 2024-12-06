@@ -52,9 +52,12 @@ class ROSNode:
 
         # Publisher
         self.pub = rospy.Publisher(topic_pub, String, queue_size=10)
+        print(type(topic_sub))
+        rospy.loginfo(f"Sub to: {topic_sub}")
 
     def sub_callback(self, msg):
         # Emit the received message to update the GUI
+        rospy.loginfo("Received message")
         self.update_gui_signal.emit(str(msg.data))
 
     def image_callback(self, ros_image):

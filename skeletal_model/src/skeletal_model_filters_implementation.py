@@ -1,6 +1,6 @@
-from collections import deque
 import rospy
 import numpy as np
+from std_msgs.msg import String
 
 
 # Define static functions for filters
@@ -31,7 +31,7 @@ filters = {
 }
 
 class DataFilter:
-    def __init__(self, window_size, filter_type="mean"):
+    def __init__(self, window_size, filter_type, gui_commands_topic):
         """
         Initialize the DataFilter class.
         
@@ -40,36 +40,49 @@ class DataFilter:
         - filter_type (str): The type of filter to apply ("mean", "median", etc.).
         """
         self.window_size = window_size
-        self.window = deque(maxlen=window_size)
+        self.window = np.zeros((window_size, 10))
+        self.current_index = 0
+        self.full = False
+
         self.filter_type = filter_type
         self.valid_filters = filters.keys()
+        gui_sub = rospy.Subscriber(gui_commands_topic, String, self.gui_callback)
 
-    def _apply_filter(self):
-        """Apply the selected filter to the current window."""
+        
 
-        if self.filter_type == "mean":
-            return mean_filter(self.window)
-        elif self.filter_type == "median":
-            return median_filter(self.window)
-        else:
-            raise ValueError(f"Unknown filter type: {self.filter_type}")
-
-    def get_filtered_angles(self, data_point:np.array):
+    def get_filtered_angles(self, data_point: np.ndarray):
         """
-        Add a new data point to the window, remove the oldest if necessary,
-        and return the filtered value.
+        Add a new data point to the window, overwrite the oldest if necessary,
+        and return the filtered value for each joint.
         
         Args:
-        - data_point: The new data point to add.
+        - data_point: The new data point to add (1D NumPy array of angles).
         
         Returns:
-        - The result of the filter applied to the window.
+        - The result of the filter applied to the window (1D NumPy array).
         """
-        self.window.append(data_point)
-        if len(self.window) == self.window_size:
-            return self._apply_filter()
+        # Add the new data point to the current index
+        self.window[self.current_index] = data_point
+
+        # Update the index and check if the window is full
+        self.current_index = (self.current_index + 1) % self.window_size
+        if self.current_index == 0:
+            self.full = True  # The window is now fully populated
+
+        # Apply the filter only if the window is full
+        if self.full:
+            if self.filter_type == "mean":
+                return np.mean(self.window, axis=0)
+            elif self.filter_type == "median":
+                return np.median(self.window, axis=0)
+            else:
+                raise ValueError(f"Filter type '{self.filter_type}' is not supported.")
         else:
-            return None  # Not enough data to apply the filter yet.
+            return None  # Not enough data to apply the filter yet
+
+    def gui_callback(self, msg):
+        if msg.data.startswith("FILTER"):
+            self.set_filter_type(msg.data[6:])
         
     def set_filter_type(self, filter_type):
         """
@@ -89,11 +102,14 @@ class DataFilter:
             
     
 
-# Example Usage
-data_filter = DataFilter(window_size=5, filter_type="mean")
+# Initialize the filter with a window size of 5
+# data_filter = DataFilter(window_size=5, filter_type="mean", gui_commands_topic="/gui/commands")
 
-# # Simulate incoming data
+# # Simulate incoming angles
 # for i in range(10):
-#     filtered_value = data_filter.add_data_point(i)
-#     if filtered_value is not None:
-#         print(f"New filtered value: {filtered_value}")
+#     data_point = np.random.rand(10)  # 10 random angles
+#     filtered = data_filter.get_filtered_angles(data_point)
+#     if filtered is not None:
+#         print(f"Filtered angles (step {i}): {filtered}")
+#     else:
+#         print(f"Not enough data to filter (step {i})")

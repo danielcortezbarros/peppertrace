@@ -22,19 +22,20 @@ from demonstration_recorder_states_and_events_implementation import DataLoggerSt
 import subprocess
 
 class PepperROS1Logger():
-    def __init__(self, topics_list, data_dir, demo_name):
+    def __init__(self, data_to_topic_map, data_dir, demo_name):
         rospy.loginfo("DataLogger initialized")
         self.data_logger_state = DataLoggerStates.NOT_RECORDING
 
         # List of topics to record
-        self.topics_list = topics_list
+        self.data_to_topic_map = data_to_topic_map
+        self.topics_list = self.set_topics(data_to_topic_map.keys())
         self.demo_dir_path = os.path.join(data_dir, demo_name)
         if not os.path.exists(self.demo_dir_path):
             os.makedirs(self.demo_dir_path)
         self.demo_counter = 1  # Counter for demo directories
 
         # Get the path to the package
-        package_path = rospkg.RosPack().get_path('programming_from_demonstration')
+        package_path = rospkg.RosPack().get_path('programming_by_demonstration')
 
         # Construct the path to the config file relative to the package path
         self.rosbag_script_path = os.path.join(package_path, 'demonstration_recorder', 'src', 'rosbag_recorder_implementation.py')
@@ -83,9 +84,20 @@ class PepperROS1Logger():
             rospy.loginfo("No recording in progress to stop.")
 
 
-    def change_topics(self, topics):
-        self.topics_list = topics
+    def set_topics(self, data_list):
+        self.topic_list = []
+        for data in data_list:
+            if data in self.data_to_topic_map:  # Ensure the data is available as a key in data_to_topic_map
+                topics = self.data_to_topic_map[data]
+                if isinstance(topics, list):
+                    self.topic_list.extend(topics)  # Add all items in the list
+                else:
+                    self.topic_list.append(topics)  # Add single string topics
+            else: 
+                rospy.logwarn(f"Specified data not available in config: {data}")
+        rospy.loginfo(f"Set topics to record: {self.topic_list}")
 
+        
     def handle_event(self, event):
         """
         Data logging event handler.
@@ -110,11 +122,11 @@ class PepperROS1Logger():
             else:
                 information = "Data logger is already stopped"
 
-        elif event.command == DataLoggerCommands.CHANGE_TOPICS:
+        elif event.command == DataLoggerCommands.SET_TOPICS:
             # set topics_list
             topics = event.args["topics"]
-            self.change_topics(topics)
-            information = f"Recording topics: {",".join(topics)} "
+            self.set_topics(topics)
+            information = f'Recording topics: {",".join(topics)} '
 
         else:
             rospy.logwarn("Received unknown command.")

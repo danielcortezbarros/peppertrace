@@ -32,16 +32,16 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.teleop_running = False
+        self.demonstrate_running = False
 
         # Get the path to the package
-        package_path = rospkg.RosPack().get_path('programming_from_demonstration')
+        package_path = rospkg.RosPack().get_path('programming_by_demonstration')
 
         # Construct the path to the config file relative to the package path
         self.gui_images_path = os.path.join(package_path, 'demonstration_gui', 'images')
         self.ui.pepperLogo.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'pepper.png')))
         self.ui.connectedIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
-        self.ui.teleopIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
+        self.ui.demonstrateIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
         self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
 
         self.ros_thread = RosThread(topic_sub=gui_system_logs_topic, topic_pub=gui_commands_topic, skeletal_model_feed_topic=skeletal_model_feed_topic)
@@ -52,8 +52,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def connect_gui_buttons(self):
         self.ui.connectButton.clicked.connect(lambda: self.send_command(f'CONNECT,{self.ui.robotIP.text()},{self.ui.port.text()}'))
-        self.ui.startTeleopButton.clicked.connect(lambda: self.send_command('START_TELEOP'))
-        self.ui.stopTeleopButton.clicked.connect(lambda: self.send_command('STOP_TELEOP'))
+        self.ui.startDemonstrateButton.clicked.connect(lambda: self.send_command('START_DEMONSTRATE'))
+        self.ui.stopDemonstrateButton.clicked.connect(lambda: self.send_command('STOP_DEMONSTRATE'))
         self.ui.startRecordButton.clicked.connect(lambda: self.send_command('START_RECORD'))
         self.ui.stopRecordButton.clicked.connect(lambda: self.send_command('STOP_RECORD'))
         self.ui.clearLogsButton.clicked.connect(lambda: self.clear_systems_log_box())
@@ -64,8 +64,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.imagesCheck.stateChanged.connect(self.update_data_to_record)
 
     def send_command(self, cmd):
-        if cmd == 'START_RECORD' and self.teleop_running == False:
-            self.display_info("[WARNING] Please start teleop before recording")
+        if cmd == 'START_RECORD' and self.demonstrate_running == False:
+            self.display_info("[WARNING] Please start demonstrate before recording")
             return
         else:
             self.ros_thread.publish_signal.emit(cmd)
@@ -83,16 +83,16 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def update_data_to_record(self):
         """Construct and publish the record command based on checked checkboxes."""
-        topics = []
+        data_to_record = []
         if self.ui.estimatedAnglesCheck.isChecked():
-            topics.append("estimated")
+            data_to_record.append("estimated_angles")
         if self.ui.measuredAnglesCheck.isChecked():
-            topics.append("measured")
+            data_to_record.append("measured_angles")
         if self.ui.imagesCheck.isChecked():
-            topics.append("images")
+            data_to_record.append("images")
 
         # Construct the command string
-        command = f"RECORD{topics}"
+        command = f"RECORD{data_to_record}"
 
         # Publish the command to the ROS topic
         rospy.loginfo(f"Publishing command: {command}")
@@ -108,8 +108,8 @@ class MainWindow(QtWidgets.QMainWindow):
             _, map_str = info.split(",", 1)
             map_dict = json.loads(map_str)
 
-            self.ui.inputMapTeleop1.setText(map_dict["Teleop"]["Start"])
-            self.ui.inputMapTeleop2.setText(map_dict["Teleop"]["Stop"])
+            self.ui.inputMapDemonstrate1.setText(map_dict["Demonstrate"]["Start"])
+            self.ui.inputMapDemonstrate2.setText(map_dict["Demonstrate"]["Stop"])
             self.ui.inputMapRecord1.setText(map_dict["Record"]["Start"])
             self.ui.inputMapRecord2.setText(map_dict["Record"]["Stop"])
 
@@ -129,23 +129,23 @@ class MainWindow(QtWidgets.QMainWindow):
             if "ERROR" not in info:
                 if "CONNECTED" in info:
                     self.ui.connectedIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
-                elif "STOPPED TELEOPING" in info:
-                    self.teleop_running = False
+                elif "STOPPED DEMONSTRATING" in info:
+                    self.demonstrate_running = False
                     self.ui.mediaPipeFeed.setPixmap(QPixmap())
-                    self.ui.teleopIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
-                elif "TELEOPING" in info:
-                    self.teleop_running = True
-                    self.ui.teleopIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
+                    self.ui.demonstrateIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
+                elif "DEMONSTRATING" in info:
+                    self.demonstrate_running = True
+                    self.ui.demonstrateIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
                 elif "STOPPED RECORDING" in info:
                     self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
                 elif "RECORDING" in info:
                     self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
 
             else:
-                if "STOPPED TELEOPING" in info:
+                if "STOPPED DEMONSTRATEING" in info:
                     self.ui.mediaPipeFeed.setPixmap(QPixmap())
-                    self.teleop_running = False
-                    self.ui.teleopIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
+                    self.demonstrate_running = False
+                    self.ui.demonstrateIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
 
     @QtCore.pyqtSlot(np.ndarray)
     def display_image_feed(self, cv_image):

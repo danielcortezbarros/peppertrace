@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(programming_from_demonstration)
+project(programming_by_demonstration)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS

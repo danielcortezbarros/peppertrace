@@ -22,7 +22,7 @@ import math
 ## class KeypointsToAngles
 #
 # This class contains methods to receive 3D keypoints and calculate skeleton joint angles  
-class HumanToHumanoidRetargeting:
+class HumanToPepperRetargeting:
     '''
     # Body parts associated to their index
     body_mapping = {'0':  "Nose", 
@@ -42,17 +42,6 @@ class HumanToHumanoidRetargeting:
     def __init__(self):
         pass
 
-    ##  method __del__
-    #
-    #   delete class
-    def __del__(self):
-        pass
-    ##  method stop_receiving
-    #
-
-
-    ##  function vector_from_points
-    #
     #   calculate 3D vector from two points ( vector = P2 - P1 )
     def vector_from_points(self, P1, P2):
         vector = [P2[0] - P1[0], P2[1] - P1[1], P2[2] - P1[2]]

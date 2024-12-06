@@ -63,7 +63,7 @@ import rospkg
 
 
 #Add implementation modules to python path
-package_path = rospkg.RosPack().get_path('programming_from_demonstration')
+package_path = rospkg.RosPack().get_path('programming_by_demonstration')
 src_path = os.path.join(package_path, 'demonstration_recorder', 'src')
 sys.path.insert(0, src_path)
 
@@ -97,7 +97,7 @@ def main():
     robot_control_handler = PepperRobotEventHandler(publisher=gui_publisher)
     information_display = GuiInfoDisplay(publisher=gui_publisher)
     user_input = GuiInputHandler(gui_commands_topic=config["gui_commands_topic"])
-    data_logger = PepperROS1Logger(topics_list=config["data_logger"]["topics_list"],
+    data_logger = PepperROS1Logger(data_to_topic_map=config["data_logger"]["data_to_topic_map"],
                                    data_dir=config["data_logger"]["data_dir"],
                                    demo_name=config["data_logger"]["demo_name"],
                                    ) 

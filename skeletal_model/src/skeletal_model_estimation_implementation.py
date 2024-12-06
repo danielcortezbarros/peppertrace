@@ -23,8 +23,8 @@ from sensor_msgs.msg import Image
 import message_filters
 import time 
 import threading
-from programming_from_demonstration.skeletal_model.src.skeletal_model_retargeting_implementation import HumanToHumanoidRetargeting
-from programming_from_demonstration.skeletal_model.src.skeletal_model_filters_implementation import DataFilter
+from skeletal_model_retargeting_implementation import HumanToPepperRetargeting
+from skeletal_model_filters_implementation import DataFilter
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from std_msgs.msg import String
 
@@ -68,6 +68,13 @@ def pixel_to_3d_camera_coords(x, y, depth, K_matrix):
     return point_3d
 
 
+def mid_point(P1, P2):
+    return [
+        (P1[0] + P2[0]) / 2,
+        (P1[1] + P2[1]) / 2,
+        (P1[2] + P2[2]) / 2
+    ]
+
 class SkeletalModelEstimation:
     def __init__(self, camera_intrinsics, 
                  image_width, 
@@ -76,8 +83,9 @@ class SkeletalModelEstimation:
                  depth_image_topic, 
                  left_arm_command_topic, 
                  right_arm_command_topic,
-                 gui_commands_topic,
-                 skeletal_model_feed_topic):
+                 skeletal_model_feed_topic,
+                 data_filter,
+                 retargeting):
 
         self.intrinsics = camera_intrinsics
         self.image_width = image_width
@@ -85,16 +93,26 @@ class SkeletalModelEstimation:
         self.bridge = CvBridge()  # Initialize the CvBridge class
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_pose = mp.solutions.pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+        self.mp_landmark_indices = [
+            mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value,
+            mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value,
+            mp.solutions.pose.PoseLandmark.LEFT_ELBOW.value,
+            mp.solutions.pose.PoseLandmark.RIGHT_ELBOW.value,
+            mp.solutions.pose.PoseLandmark.LEFT_WRIST.value,
+            mp.solutions.pose.PoseLandmark.RIGHT_WRIST.value,
+            mp.solutions.pose.PoseLandmark.LEFT_HIP.value,
+            mp.solutions.pose.PoseLandmark.RIGHT_HIP.value,
+        ]
 
         self.image_lock = threading.Lock()
         self.latest_image = None
         self.shutdown_flag = False
-        self.filter = DataFilter(20, "mean")
+        self.filter = data_filter
+        self.retargeting = retargeting
 
         # Subscribe to both the color and depth topics
         color_sub = message_filters.Subscriber(color_image_topic, Image)
         depth_sub = message_filters.Subscriber(depth_image_topic, Image)
-        gui_sub = rospy.Subscriber(gui_commands_topic, String, self.gui_callback)
         self.left_arm_command_pub = rospy.Publisher(left_arm_command_topic, JointTrajectory, queue_size=10)
         self.right_arm_command_pub = rospy.Publisher(right_arm_command_topic, JointTrajectory, queue_size=10)
         self.image_pub = rospy.Publisher(skeletal_model_feed_topic, Image, queue_size=1)
@@ -102,50 +120,65 @@ class SkeletalModelEstimation:
         self.left_arm_joint_names = ["LShoulderPitch", "LShoulderRoll", "LElbowRoll", "LElbowYaw", "LWristYaw"]
         self.right_arm_joint_names = ["RShoulderPitch", "RShoulderRoll", "RElbowRoll", "RElbowYaw", "RWristYaw"]
 
+        self.left_traj_msg = JointTrajectory()
+        self.left_traj_msg.joint_names = self.left_arm_joint_names
+        self.left_point = JointTrajectoryPoint()
+        self.left_point.time_from_start = rospy.Duration(0.033)  # Fixed time interval
+        self.left_traj_msg.points = [self.left_point]
+
+        self.right_traj_msg = JointTrajectory()
+        self.right_traj_msg.joint_names = self.right_arm_joint_names
+        self.right_point = JointTrajectoryPoint()
+        self.right_point.time_from_start = rospy.Duration(0.033)  # Fixed time interval
+        self.right_traj_msg.points = [self.right_point]
+
 
         # Synchronize the image and depth topics
         ts = message_filters.ApproximateTimeSynchronizer([color_sub, depth_sub], 10, 0.04)
         ts.registerCallback(self.image_callback)
 
         self.lock = threading.Lock() 
-
-    def gui_callback(self, msg):
-        if msg.data.startswith("FILTER"):
-            self.filter.set_filter_type(msg.data)
  
 
     def image_callback(self, image_data, depth_data):
         # Acquire the lock to ensure only one callback is processed at a time
-        rospy.loginfo("Received synchronized images")
         if not self.lock.acquire(blocking=False):
-            print('Skipping')
+            rospy.logwarn("Frame skipped due to lock contention")
             return
 
         try:
+            rospy.loginfo("Received image at timestamp: %s", image_data.header.stamp)
+            rospy.loginfo("Received depth at timestamp: %s", depth_data.header.stamp)
+
             # Convert ROS Image message to OpenCV image for both color and depth
             bgr_image = self.bridge.imgmsg_to_cv2(image_data, "bgr8")
-            cv2.imshow('image', bgr_image)
             depth_image = self.bridge.imgmsg_to_cv2(depth_data, "16UC1")  # Depth is usually 16-bit unsigned
 
             # Convert to RGB for MediaPipe processing
             rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
             rgb_image.flags.writeable = False
             
-            landmarks=self.get_landmarks(bgr_image)
+            landmarks = self.get_landmarks(bgr_image)
 
             if landmarks is not None:
                 angles = self.get_pepper_angles(landmarks, depth_image)
             else:
                 rospy.loginfo("Landmarks could not be calculated")
                 return
-                
+
 
             if angles is not None:
                 filtered_angles = self.filter.get_filtered_angles(angles)
+            else:
+                rospy.loginfo("Landmarks could not be calculated")
+                return
+
+            if filtered_angles is not None:
                 self.publish_angles(filtered_angles)
             else:
-                rospy.loginfo("No landmarks for all joints, skipped angle calculation")
+                rospy.logwarn("Filter not yet ready: insufficient data in window")
                 return
+                
 
         except CvBridgeError as e:
             rospy.logerr(f"CvBridgeError: {e}")
@@ -204,15 +237,6 @@ class SkeletalModelEstimation:
             dict: A dictionary containing angles for both arms (left and right).
         """
 
-        
-        def mid_point(P1, P2):
-            return [
-                (P1[0] + P2[0]) / 2,
-                (P1[1] + P2[1]) / 2,
-                (P1[2] + P2[2]) / 2
-            ]
-
-        # First, calculate the 3D coordinates for all keypoints from MediaPipe and depth image
         LShoulder = self.get_3d_coordinates(landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value], depth_image)
         RShoulder = self.get_3d_coordinates(landmarks[mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value], depth_image)
         LElbow = self.get_3d_coordinates(landmarks[mp.solutions.pose.PoseLandmark.LEFT_ELBOW.value], depth_image)
@@ -245,8 +269,8 @@ class SkeletalModelEstimation:
         }
 
         # Finally, call the get_angles function
-        calc_util=HumanToHumanoidRetargeting()
-        angles = calc_util.get_angles(wp_dict)
+
+        angles = self.retargeting.get_angles(wp_dict)
         angles = {
             'LShoulderPitch': angles[0],
             'LShoulderRoll': angles[1],
@@ -262,56 +286,64 @@ class SkeletalModelEstimation:
 
         print(angles)
 
+        angles = np.array(list(angles.values()))
+
+
         return angles
     
 
     def publish_angles(self, angles):
-        # Publish left arm joint angles
-        left_traj_msg = JointTrajectory()
-        left_traj_msg.joint_names = self.left_arm_joint_names
+            """
+            Publish joint angles for left and right arms using pre-initialized JointTrajectory messages.
+            
+            Args:
+            - angles (np.ndarray): A 1D NumPy array of joint angles.
+            """
+            # Indices for left and right arm joints in the angles array
+            left_arm_indices = [0, 1, 2, 3, 4]  # Indices for LShoulderPitch, LShoulderRoll, LElbowRoll, LElbowYaw, LWristYaw
+            right_arm_indices = [5, 6, 7, 8, 9]  # Indices for RShoulderPitch, RShoulderRoll, RElbowRoll, RElbowYaw, RWristYaw
 
-        # Create a JointTrajectoryPoint for the left arm
-        left_point = JointTrajectoryPoint()
-        left_point.positions = [angles[joint] for joint in self.left_arm_joint_names]
-        left_point.time_from_start = rospy.Duration(0.033)  # Set time to 33 ms (30 FPS)
+            # Update left arm joint positions
+            self.left_point.positions = angles[left_arm_indices].tolist()
 
-        left_traj_msg.points = [left_point]  # Add the point to the trajectory
+            # Update right arm joint positions
+            self.right_point.positions = angles[right_arm_indices].tolist()
 
-        # Publish right arm joint angles
-        right_traj_msg = JointTrajectory()
-        right_traj_msg.joint_names = self.right_arm_joint_names
+            # Update timestamps
+            future_time = rospy.Time.now() + rospy.Duration(0.05)
+            self.left_traj_msg.header.stamp = future_time
+            self.right_traj_msg.header.stamp = future_time
 
-        # Create a JointTrajectoryPoint for the right arm
-        right_point = JointTrajectoryPoint()
-        right_point.positions = [angles[joint] for joint in self.right_arm_joint_names]
-        right_point.time_from_start = rospy.Duration(0.033)  # Set time to 33 ms (30 FPS)
+            # Publish the messages
+            self.left_arm_command_pub.publish(self.left_traj_msg)
+            self.right_arm_command_pub.publish(self.right_traj_msg)
 
-        right_traj_msg.points = [right_point]  # Add the point to the trajectory
 
-        future_time = rospy.Time.now() + rospy.Duration(0.05)
-        left_traj_msg.header.stamp = future_time
-        right_traj_msg.header.stamp = future_time
-
-        # Publish the messages to the left and right arm controllers
-        self.left_arm_command_pub.publish(left_traj_msg)
-        self.right_arm_command_pub.publish(right_traj_msg)
-
-        # self.bag.write(self.left_arm_command_topic, left_traj_msg)
-        # self.bag.write(self.right_arm_command_topic, right_traj_msg)
+   
 
     def run(self):
         """Main loop to continuously display the image feed."""
         while not rospy.is_shutdown() and not self.shutdown_flag:
+            # Safely retrieve the latest image without holding the lock too long
             with self.image_lock:
-                if self.latest_image is not None:
-          
-                    # Publish the image
-                    compressed_image = cv2.resize(self.latest_image, (640, 360))
-                    ros_image = self.bridge.cv2_to_imgmsg(compressed_image, encoding="bgr8")
+                image_to_display = self.latest_image.copy() if self.latest_image is not None else None
+
+            # Publish the image
+            if image_to_display is not None:
+                compressed_image = cv2.resize(self.latest_image, (640, 360))
+                ros_image = self.bridge.cv2_to_imgmsg(compressed_image, encoding="bgr8")
                     
-                    self.image_pub.publish(ros_image)
-                    # cv2.imwrite('/root/workspace/pepper_rob_ws/images/debug_output.png', self.latest_image)
+                self.image_pub.publish(ros_image)
 
-        # Clean up the windows after the loop exits
-        cv2.destroyAllWindows()
+            # if image_to_display is not None:
+            #     cv2.imshow("Banana", image_to_display)
 
+            # # Process GUI events and handle key presses
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     rospy.loginfo("Shutting down visualization")
+            #     self.shutdown_flag = True
+            #     break
+        
+
+        # Clean up OpenCV windows after exiting
+        # cv2.destroyAllWindows()

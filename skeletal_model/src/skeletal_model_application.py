@@ -62,13 +62,15 @@ import os
 import rospkg 
 
 #Add implementation modules to python path
-package_path = rospkg.RosPack().get_path('programming_from_demonstration')
+package_path = rospkg.RosPack().get_path('programming_by_demonstration')
 src_path = os.path.join(package_path, 'skeletal_model', 'src')
 sys.path.insert(0, src_path)
 
 import rospy
 import json
 from skeletal_model_estimation_implementation import SkeletalModelEstimation
+from skeletal_model_filters_implementation import DataFilter
+from skeletal_model_retargeting_implementation import HumanToPepperRetargeting
 
 def main():
     rospy.init_node('skeletal_model', anonymous=False)
@@ -80,6 +82,9 @@ def main():
     with open(config_file_path, 'r') as config_file:
         config = json.load(config_file)
 
+    data_filter = DataFilter(window_size=5, filter_type="mean", gui_commands_topic=config["gui_commands_topic"])
+    human_to_pepper = HumanToPepperRetargeting()
+
     # Instantiate skeletal model class with config parameters
     skeletal_model = SkeletalModelEstimation(camera_intrinsics=config["camera_intrinsics"],
                                    image_width=config["image_width"],
@@ -88,8 +93,9 @@ def main():
                                    depth_image_topic=config["depth_image_topic"],
                                    left_arm_command_topic=config["left_arm_command_topic"],
                                    right_arm_command_topic=config["right_arm_command_topic"], 
-                                   gui_commands_topic=config["gui_commands_topic"],
-                                   skeletal_model_feed_topic=config["skeletal_model_feed_topic"]
+                                   skeletal_model_feed_topic=config["skeletal_model_feed_topic"],
+                                   data_filter = data_filter,
+                                   retargeting = human_to_pepper
                                    )
 
     # Run ROS loop to get Pepper angles from images

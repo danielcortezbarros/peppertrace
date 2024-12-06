@@ -1,7 +1,7 @@
-from programming_from_demonstration.skeletal_model.src.others.minimize_jerk_implementation import RealTimeMinimizeJerk
+from programming_by_demonstration.skeletal_model.src.others.minimize_jerk_implementation import RealTimeMinimizeJerk
 import numpy as np
 import json
-from programming_from_demonstration.skeletal_model.src.others.minimize_jerk_implementation import JointTrajectoryListener
+from programming_by_demonstration.skeletal_model.src.others.minimize_jerk_implementation import JointTrajectoryListener
 
 if __name__ == "__main__":
 

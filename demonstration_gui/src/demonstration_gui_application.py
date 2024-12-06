@@ -54,7 +54,7 @@ import os
 import json
 
 #Add implementation modules to python path
-package_path = rospkg.RosPack().get_path('programming_from_demonstration')
+package_path = rospkg.RosPack().get_path('programming_by_demonstration')
 src_path = os.path.join(package_path, 'demonstration_gui', 'src')
 sys.path.insert(0, src_path)
 
