@@ -45,7 +45,7 @@ class RosBagRecorder:
         """
         Start recording the single topic.
         """
-        rospy.init_node('rosbag_logger', anonymous=False)
+        rospy.init_node('rosbag_logger', anonymous=True)
 
         # Get the available topics
         available_topics_list = rospy.get_published_topics()

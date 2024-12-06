@@ -29,6 +29,7 @@ class PepperROS1Logger():
         # List of topics to record
         self.data_to_topic_map = data_to_topic_map
         self.topics_list = self.set_topics(data_to_topic_map.keys())
+      
         self.demo_dir_path = os.path.join(data_dir, demo_name)
         if not os.path.exists(self.demo_dir_path):
             os.makedirs(self.demo_dir_path)
@@ -38,7 +39,7 @@ class PepperROS1Logger():
         package_path = rospkg.RosPack().get_path('programming_by_demonstration')
 
         # Construct the path to the config file relative to the package path
-        self.rosbag_script_path = os.path.join(package_path, 'demonstration_recorder', 'src', 'rosbag_recorder_implementation.py')
+        self.rosbag_script_path = os.path.join(package_path, 'demonstration_recorder', 'src', 'demonstration_recorder_rosbag_recorder_implementation.py')
 
         # Recorder for managing bag recording
         self.record_processes = None  # Process for running recording
@@ -53,16 +54,17 @@ class PepperROS1Logger():
             self.record_processes = []  # Store references to processes for each topic
 
             # Start a recording process for each topic
-            for topic in self.topics_list:
-                bag_file = os.path.join(self.demo_dir_path, f"demo_{self.demo_counter}{topic.replace('/', '_')}.bag")
+            if len(self.topics_list) !=0:
+                for topic in self.topics_list:
+                    bag_file = os.path.join(self.demo_dir_path, f"demo_{self.demo_counter}{topic.replace('/', '_')}.bag")
 
-                # Start recording by calling the external script for each topic
-                process = subprocess.Popen(['python3', self.rosbag_script_path, bag_file, topic])
-                self.record_processes.append(process)  # Track the process for later management
+                    # Start recording by calling the external script for each topic
+                    process = subprocess.Popen(['python3', self.rosbag_script_path, bag_file, topic])
+                    self.record_processes.append(process)  # Track the process for later management
 
-                rospy.loginfo(f"Started recording {topic} in {bag_file}")
+                    rospy.loginfo(f"Started recording {topic} in {bag_file}")
 
-            rospy.loginfo("Started recording all topics")
+            rospy.loginfo("Started recording all specified topics")
         else:
             rospy.loginfo("Logger is already recording.")
 
@@ -85,17 +87,18 @@ class PepperROS1Logger():
 
 
     def set_topics(self, data_list):
-        self.topic_list = []
+        topic_list = []
         for data in data_list:
             if data in self.data_to_topic_map:  # Ensure the data is available as a key in data_to_topic_map
                 topics = self.data_to_topic_map[data]
                 if isinstance(topics, list):
-                    self.topic_list.extend(topics)  # Add all items in the list
+                    topic_list.extend(topics)  # Add all items in the list
                 else:
-                    self.topic_list.append(topics)  # Add single string topics
+                    topic_list.append(topics)  # Add single string topics
             else: 
                 rospy.logwarn(f"Specified data not available in config: {data}")
-        rospy.loginfo(f"Set topics to record: {self.topic_list}")
+        rospy.loginfo(f"Set topics to record: {topic_list}")
+        return topic_list
 
         
     def handle_event(self, event):
@@ -104,7 +107,7 @@ class PepperROS1Logger():
         This function is called by the DemoRecorder whenever a Data Logging Event is registered in the queue.
         It is best not to change this function.
         """
-        rospy.loginfo("Received event")
+        rospy.loginfo(f"Received event: {event.command}")
         information = ""
         if event.command == DataLoggerCommands.START_RECORD:
             if self.data_logger_state == DataLoggerStates.RECORDING:
@@ -125,7 +128,7 @@ class PepperROS1Logger():
         elif event.command == DataLoggerCommands.SET_TOPICS:
             # set topics_list
             topics = event.args["topics"]
-            self.set_topics(topics)
+            self.topics_list=self.set_topics(topics)
             information = f'Recording topics: {",".join(topics)} '
 
         else:
