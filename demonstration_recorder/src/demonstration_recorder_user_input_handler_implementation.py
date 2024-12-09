@@ -76,6 +76,14 @@ class GuiInputHandler:
         elif command.startswith("RECORD"):
             topics = eval(command[len("RECORD"):])  # Convert the string to a list
             self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SET_TOPICS, args={"topics":topics})
+        elif command.startswith("START_REPLAY"):
+            _, file_path = command.split(",")
+            self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START_REPLAY, args={'file_path': file_path})
+        elif command == "STOP_REPLAY":
+            self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.STOP_REPLAY)
+        elif command.startswith("FILTER"):
+            # This is handled directly by the filters implementation in the skeletal_model_component
+            pass
         else:
             rospy.logwarn(f"Unknown GUI command: {command}")
 

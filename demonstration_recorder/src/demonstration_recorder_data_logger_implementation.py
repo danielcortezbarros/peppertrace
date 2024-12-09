@@ -22,9 +22,9 @@ from demonstration_recorder_states_and_events_implementation import DataLoggerSt
 import subprocess
 
 class PepperROS1Logger():
-    def __init__(self, data_to_topic_map, data_dir, demo_name):
+    def __init__(self, data_to_topic_map, data_dir, demo_name, publisher):
         rospy.loginfo("DataLogger initialized")
-        self.data_logger_state = DataLoggerStates.NOT_RECORDING
+        self.data_logger_state = DataLoggerStates.IDLE
 
         # List of topics to record
         self.data_to_topic_map = data_to_topic_map
@@ -43,13 +43,18 @@ class PepperROS1Logger():
 
         # Recorder for managing bag recording
         self.record_processes = None  # Process for running recording
+        self.replay_processes = None
+
+        self.gui_publisher=publisher
+
+        self.replay_monitor_timer = None
 
 
     def start_logging(self):
         """
         Start recording the ROS bag in a separate process for each topic.
         """
-        if self.data_logger_state == DataLoggerStates.NOT_RECORDING:
+        if self.data_logger_state == DataLoggerStates.IDLE:
 
             self.record_processes = []  # Store references to processes for each topic
 
@@ -66,7 +71,7 @@ class PepperROS1Logger():
 
             rospy.loginfo("Started recording all specified topics")
         else:
-            rospy.loginfo("Logger is already recording.")
+            rospy.loginfo("Data Logger is busy with recording or replaying.")
 
 
     def stop_logging(self):
@@ -84,6 +89,50 @@ class PepperROS1Logger():
             rospy.loginfo("Stopped recording successfully")
         else:
             rospy.loginfo("No recording in progress to stop.")
+
+
+    def start_replay(self, file_path):
+        """
+        Start replaying a ROS bag file in a separate process.
+        """
+        if self.data_logger_state == DataLoggerStates.IDLE:
+            if os.path.exists(file_path):
+                rospy.loginfo(f"Starting replay of {file_path}")
+                self.replay_process = subprocess.Popen(['rosbag', 'play', file_path])
+                self.data_logger_state = DataLoggerStates.REPLAYING
+                # Monitor the process asynchronously
+                self.replay_monitor_timer = rospy.Timer(rospy.Duration(1.0), self._monitor_replay_process)
+            else:
+                rospy.logwarn(f"Cannot replay. File does not exist: {file_path}")
+        else:
+            rospy.logwarn("Data Logger is busy with another operation.")
+
+
+    def stop_replay(self):
+        """
+        Stop replaying the ROS bag file and release resources.
+        """
+        if self.data_logger_state == DataLoggerStates.REPLAYING:
+            rospy.loginfo("Stopping replay process...")
+            self.replay_process.terminate()
+            self.replay_process.wait()  # Wait for the process to fully exit
+            self.replay_process = None  # Clear the reference to the process
+            self.data_logger_state = DataLoggerStates.IDLE
+            rospy.loginfo("Replay stopped successfully.")
+            self.replay_monitor_timer.shutdown()
+        else:
+            rospy.loginfo("No replay in progress to stop.")
+
+
+    def _monitor_replay_process(self, event):
+        """
+        Periodically checks if the replay process has ended.
+        """
+        if self.replay_process and self.replay_process.poll() is not None:  # Process has finished
+            rospy.loginfo("Replay process completed.")
+            self.replay_process = None
+            self.data_logger_state = DataLoggerStates.IDLE
+            self.replay_monitor_timer.shutdown()
 
 
     def set_topics(self, data_list):
@@ -121,15 +170,30 @@ class PepperROS1Logger():
             if self.data_logger_state == DataLoggerStates.RECORDING:
                 self.stop_logging()
                 information = "Data logger is stopped"
-                self.data_logger_state = DataLoggerStates.NOT_RECORDING
+                self.data_logger_state = DataLoggerStates.IDLE
             else:
                 information = "Data logger is already stopped"
+
+        elif event.command == DataLoggerCommands.START_REPLAY:
+            file_path = event.args.get("file_path")
+            if not file_path or not os.path.exists(file_path):
+                information = "[WARNING] Cannot replay: path does not exist."
+            else:
+                self.start_replay(file_path)
+                information = f"Started replaying recording: {file_path}"
+
+        elif event.command == DataLoggerCommands.STOP_REPLAY:
+            if self.data_logger_state == DataLoggerStates.REPLAYING:
+                self.stop_replay()
+                information = "Replay stopped."
+            else:
+                information = "No replay in progress to stop."
 
         elif event.command == DataLoggerCommands.SET_TOPICS:
             # set topics_list
             topics = event.args["topics"]
             self.topics_list=self.set_topics(topics)
-            information = f'Recording topics: {",".join(topics)} '
+            information = f'Set topics to record: {",".join(topics)} '
 
         else:
             rospy.logwarn("Received unknown command.")

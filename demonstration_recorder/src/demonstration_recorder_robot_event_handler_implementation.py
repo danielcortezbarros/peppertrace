@@ -40,11 +40,13 @@ class PepperRobotEventHandler():
 
     def __init__(self, publisher):
         rospy.loginfo("RobotEventHandler initialized")
-        self.robot_state = RobotStates.READY
+        self.robot_state = RobotStates.DISCONNECTED
         self.demonstrate_process = None  # To store the demonstrate process
-        self.monitor_thread = None  # Thread for monitoring the demonstrate process
-        self.monitoring = False  # Flag to control monitoring
+        self.robot_connection_process = None  # To store the demonstrate process
         self.gui_publisher = publisher
+        self.demonstrate_monitor_timer = None
+        self.robot_connection_monitor_timer = None
+    
 
     def connect(self, robot_ip: str, port: str, network_interface: str = "eth0") -> bool:
         rospy.loginfo(f"Connecting to {robot_ip}:{port} on {network_interface}...")
@@ -56,8 +58,41 @@ class PepperRobotEventHandler():
             f"robot_ip:={robot_ip}",
             f"network_interface:={network_interface}"
         ]
-        process = launch_ros_subprocess(command)
-        return process is not None
+        self.robot_connection_process = launch_ros_subprocess(command)
+        if self.robot_connection_process:
+            self.robot_connection_monitor_timer = rospy.Timer(rospy.Duration(1.0), self._monitor_robot_connection_process)
+            return True
+        else:
+            return False
+
+    def disconnect(self) -> bool:
+        if self.robot_connection_process is not None:
+            rospy.loginfo("Disconnecting robot...")
+            try:
+                self.robot_connection_process.terminate()
+                self.robot_connection_process.wait()
+                self.robot_connection_process = None
+                rospy.loginfo("robot_connection process stopped successfully.")
+                self.gui_publisher.publish("[INFO] ROBOT DISCONNECTED")
+                return True
+            except Exception as e:
+                rospy.logerr(f"Failed to stop robot_connection: {str(e)}")
+                return False
+        else:
+            rospy.logwarn("No robot_connection process is running.")
+            return False
+
+    def _monitor_robot_connection_process(self, event):
+        """
+        Periodically checks if the robot_connection process has ended.
+        """
+        if self.robot_connection_process and self.robot_connection_process.poll() is not None:  # Process has finished
+            rospy.loginfo("robot_connection process has died")
+            self.gui_publisher.publish("[INFO] ROBOT DISCONNECTED")
+            self.robot_connection_process = None
+            self.robot_state = RobotStates.DISCONNECTED
+            self.robot_connection_monitor_timer.shutdown()
+
 
     def start_demonstrate(self) -> bool:
         rospy.loginfo("Starting demonstrate...")
@@ -70,19 +105,15 @@ class PepperRobotEventHandler():
         self.demonstrate_process = launch_ros_subprocess(command)
 
         if self.demonstrate_process:
-            self.monitoring = True
-            self.monitor_thread = threading.Thread(target=self.monitor_demonstrate_process)  # No daemon=True
-            self.monitor_thread.start()
+            self.demonstrate_monitor_timer = rospy.Timer(rospy.Duration(1.0), self._monitor_demonstrate_process)
             return True
-        return False
+        else:
+            return False
 
     def stop_demonstrate(self) -> bool:
         if self.demonstrate_process is not None:
             rospy.loginfo("Stopping demonstrate...")
             try:
-                self.monitoring = False  # Stop monitoring
-                if self.monitor_thread.is_alive():
-                    self.monitor_thread.join()  # Wait for the thread to finish
                 self.demonstrate_process.terminate()
                 self.demonstrate_process.wait()
                 self.demonstrate_process = None
@@ -94,21 +125,18 @@ class PepperRobotEventHandler():
         else:
             rospy.logwarn("No demonstrate process is running.")
             return False
-
-    def monitor_demonstrate_process(self):
-        """
-        Monitors the demonstrate process and logs a message if it dies unexpectedly.
-        """
-        rospy.loginfo("Starting demonstrate process monitoring.")
-        while self.monitoring:
-            if self.demonstrate_process.poll() is not None:  # Process has terminated
-                rospy.logwarn("Demonstrate process has died.")
-                self.monitoring = False
-                self.demonstrate_process = None
-                self.gui_publisher.publish("[ERROR] STOPPED DEMONSTRATING due to error in skeletal_model or camera.")
-            time.sleep(1)  # Check the process status every second
-        rospy.loginfo("Stopped demonstrate process monitoring.")
     
+    def _monitor_demonstrate_process(self, event):
+        """
+        Periodically checks if the demonstrate process has ended.
+        """
+        if self.demonstrate_process and self.demonstrate_process.poll() is not None:  # Process has finished
+            rospy.loginfo("Demonstrate process has died")
+            self.gui_publisher.publish("[ERROR] STOPPED DEMONSTRATING due to error in skeletal_model or camera.")
+            self.replay_process = None
+            self.data_logger_state = DataLoggerStates.IDLE
+            self.demonstrate_monitor_timer.shutdown()
+
     def handle_event(self, event):
         """
         Robot Control event handler.
@@ -119,9 +147,13 @@ class PepperRobotEventHandler():
         if event.command == RobotCommands.CONNECT:
             connected = self.connect(robot_ip=event.args["robot_ip"], port=event.args["port"])
             if connected:
-                information = "[INFO] CONNECTED successfully."
+                information = "[INFO] ROBOT CONNECTED successfully."
             else:
                 information = "[ERROR] Failed to connect to robot, please check and try again."
+
+        elif event.command == RobotCommands.DISCONNECT:
+            self.disconnect()
+            information = "[INFO] ROBOT DISCONNECTED successfully."
 
         elif event.command == RobotCommands.START_DEMONSTRATE:
             success = self.start_demonstrate()

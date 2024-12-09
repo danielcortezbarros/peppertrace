@@ -56,6 +56,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.stopDemonstrateButton.clicked.connect(lambda: self.send_command('STOP_DEMONSTRATE'))
         self.ui.startRecordButton.clicked.connect(lambda: self.send_command('START_RECORD'))
         self.ui.stopRecordButton.clicked.connect(lambda: self.send_command('STOP_RECORD'))
+        self.ui.startReplayButton.clicked.connect(lambda: self.send_command(f'START_REPLAY,{self.ui.replayLineEdit.text()}'))
+        self.ui.stopReplayButton.clicked.connect(lambda: self.send_command('STOP_REPLAY'))
+        self.ui.browseButton.clicked.connect(self.open_file_dialog)
         self.ui.clearLogsButton.clicked.connect(lambda: self.clear_systems_log_box())
         self.ui.biomoRadio.toggled.connect(self.update_filter)
         self.ui.butterworthRadio.toggled.connect(self.update_filter)
@@ -67,11 +70,26 @@ class MainWindow(QtWidgets.QMainWindow):
         if cmd == 'START_RECORD' and self.demonstrate_running == False:
             self.display_info("[WARNING] Please start demonstrate before recording")
             return
+        elif cmd.startswith('START_REPLAY'):
+            rospy.loginfo(f"Thing: {self.ui.replayLineEdit.text()}")
+            if self.demonstrate_running == True:
+                self.display_info("[WARNING] Please stop demonstrating before replaying motion.")
+                return
+            elif self.ui.replayLineEdit.text() == "":
+                self.display_info("[WARNING] Please specify a file to replay.")
+                return
+            else:
+                self.ros_thread.publish_signal.emit(cmd)
         else:
             self.ros_thread.publish_signal.emit(cmd)
 
     def clear_systems_log_box(self):
         self.ui.systemLogsBox.clear()
+
+    def open_file_dialog(self):
+        file_name, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Select File", "", "All Files (*.*)")
+        if file_name:
+            self.ui.replayLineEdit.setText(file_name)
 
     def update_filter(self):
         sender = self.sender() 
@@ -127,8 +145,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
             # change GUI images
             if "ERROR" not in info:
-                if "CONNECTED" in info:
+                if "ROBOT CONNECTED" in info:
+                    self.ui.connectButton.setText("DISCONNECT")
                     self.ui.connectedIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
+                elif "ROBOT DISCONNECTED" in info:
+                    self.ui.connectButton.setText("CONNECT")
+                    self.ui.connectedIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
                 elif "STOPPED DEMONSTRATING" in info:
                     self.demonstrate_running = False
                     self.ui.mediaPipeFeed.setPixmap(QPixmap())
@@ -140,12 +162,14 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
                 elif "RECORDING" in info:
                     self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
+               
 
             else:
-                if "STOPPED DEMONSTRATEING" in info:
+                if "STOPPED DEMONSTRATING" in info:
                     self.ui.mediaPipeFeed.setPixmap(QPixmap())
                     self.demonstrate_running = False
                     self.ui.demonstrateIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
+                
 
     @QtCore.pyqtSlot(np.ndarray)
     def display_image_feed(self, cv_image):

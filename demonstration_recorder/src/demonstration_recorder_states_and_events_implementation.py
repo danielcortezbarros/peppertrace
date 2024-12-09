@@ -28,23 +28,27 @@ class EventType(Enum):
 class DataLoggerCommands(Enum):
     START_RECORD = 0
     STOP_RECORD = 1
-    SET_TOPICS = 2
+    START_REPLAY = 2
+    STOP_REPLAY = 3
+    SET_TOPICS = 4
 
 
 class DataLoggerStates(Enum):
+    IDLE = 0
     RECORDING = 1
-    NOT_RECORDING = 2
+    REPLAYING = 2
 
 
 class RobotCommands(Enum):
     CONNECT = 0
-    START_DEMONSTRATE = 1
-    STOP_DEMONSTRATE = 2
+    DISCONNECT = 1
+    START_DEMONSTRATE = 2
+    STOP_DEMONSTRATE = 3
 
 
 class RobotStates(Enum):
-    READY = 0
-    NOT_READY = 1
+    CONNECTED = 0
+    DISCONNECTED = 1
 
 
 class Event:

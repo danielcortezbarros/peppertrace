@@ -100,6 +100,7 @@ def main():
     data_logger = PepperROS1Logger(data_to_topic_map=config["data_logger"]["data_to_topic_map"],
                                    data_dir=config["data_logger"]["data_dir"],
                                    demo_name=config["data_logger"]["demo_name"],
+                                   publisher=gui_publisher
                                    ) 
 
     # Create the DemoRecorder object with the initialized handlers and logger
