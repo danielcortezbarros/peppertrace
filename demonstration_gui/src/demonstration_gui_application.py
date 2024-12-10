@@ -65,84 +65,71 @@ from demonstration_gui_logic_implementation import MainWindow
 
 def run_unit_tests(main_window):
     """
-    Simulates GUI interactions for testing.
+    Simulates GUI interactions for testing in the main thread.
     """
     rospy.loginfo("Running unit tests...")
 
-    rospy.loginfo("Testing CONNECT button...")
-    QtTest.QTest.mouseClick(main_window.ui.connectButton, QtCore.Qt.LeftButton)
+    buttons_to_test = {
+        "CONNECT": main_window.ui.connectButton,
+        "DISCONNECT": main_window.ui.connectButton,
+        "START_DEMONSTRATE": main_window.ui.startDemonstrateButton,
+        "STOP_DEMONSTRATE": main_window.ui.stopDemonstrateButton,
+        "START_RECORD": main_window.ui.startRecordButton,
+        "STOP_RECORD": main_window.ui.stopRecordButton,
+        "START_REPLAY": main_window.ui.startReplayButton,
+        "STOP_REPLAY": main_window.ui.stopReplayButton,
+        "BROWSE": main_window.ui.browseButton,
+        "CLEAR": main_window.ui.clearLogsButton,
+    }
 
-    time.sleep(1)
+    for name, button in buttons_to_test.items():
+        rospy.loginfo(f"Testing {name} button...")
 
-    rospy.loginfo("Testing DISCONNECT button...")
-    QtTest.QTest.mouseClick(main_window.ui.connectButton, QtCore.Qt.LeftButton)
+        # Simulate button click
+        button.animateClick(200)  # Simulate a button click with animation (200ms duration)
+        QtWidgets.QApplication.processEvents()  # Process GUI events to reflect button state
+        QtCore.QThread.msleep(1000)  # Small delay to visualize the click
 
-    time.sleep(1)
-
-    rospy.loginfo("Testing START_DEMONSTRATE button...")
-    QtTest.QTest.mouseClick(main_window.ui.startDemonstrateButton, QtCore.Qt.LeftButton)
-
-    time.sleep(0.5)
-
-    rospy.loginfo("Testing STOP_DEMONSTRATE button...")
-    QtTest.QTest.mouseClick(main_window.ui.stopDemonstrateButton, QtCore.Qt.LeftButton)
-
-    time.sleep(0.5)
-
-    rospy.loginfo("Testing START_RECORD button...")
-    QtTest.QTest.mouseClick(main_window.ui.startRecordButton, QtCore.Qt.LeftButton)
-
-    time.sleep(0.5)
-
-    rospy.loginfo("Testing STOP_RECORD button...")
-    QtTest.QTest.mouseClick(main_window.ui.stopRecordButton, QtCore.Qt.LeftButton)
-
-    time.sleep(0.5)
-
-    rospy.loginfo("Testing START_REPLAY button...")
-    QtTest.QTest.mouseClick(main_window.ui.startReplayButton, QtCore.Qt.LeftButton)
-
-    time.sleep(0.5)
-
-    rospy.loginfo("Testing STOP_REPLAY button...")
-    QtTest.QTest.mouseClick(main_window.ui.stopReplayButton, QtCore.Qt.LeftButton)
-
-    time.sleep(1)
-
-    rospy.loginfo("Testing BROWSE button...")
-    QtTest.QTest.mouseClick(main_window.ui.browseButton, QtCore.Qt.LeftButton)
-
-    time.sleep(1)
-
-    rospy.loginfo("Testing CLEAR button...")
-    QtTest.QTest.mouseClick(main_window.ui.clearLogsButton, QtCore.Qt.LeftButton)
-
-    rospy.loginfo("All tests done. Please confirm desired output with deliverable.")
+    rospy.loginfo("All tests completed.")
+    QtWidgets.QApplication.quit()  # Exit the application after tests
 
 
 def main():
+    rospy.init_node('demonstration_gui_node', anonymous=True)
 
     # Load configuration
+    rospack = rospkg.RosPack()
+    package_path = rospack.get_path('programming_by_demonstration')
     config_file_path = os.path.join(package_path, 'demonstration_gui', 'config', 'demonstration_gui_configuration.json')
     with open(config_file_path, 'r') as config_file:
         config = json.load(config_file)
 
     app = QtWidgets.QApplication(sys.argv)
 
-    # Instantiate the Qt GUI window
-    main_window = MainWindow(gui_commands_topic=config["gui_commands_topic"],
-                             gui_system_logs_topic=config["gui_system_logs_topic"],
-                             skeletal_model_feed_topic=config["skeletal_model_feed_topic"])
+    # Instantiate the GUI
+    main_window = MainWindow(
+        gui_commands_topic=config["gui_commands_topic"],
+        gui_system_logs_topic=config["gui_system_logs_topic"],
+        skeletal_model_feed_topic=config["skeletal_model_feed_topic"]
+    )
     main_window.show()
 
-    # Run unit tests if the parameter is set
-    unit_test = rospy.get_param('/demonstration_gui/unit_test', False)
-    if unit_test:
-        run_unit_tests(main_window)
-    else:
-        rospy.loginfo("Opening GUI...")
-        sys.exit(app.exec_())
+    # Check if unit tests should run
+    unit_test = rospy.get_param('~unit_test', False)
+    rospy.loginfo(f"Performing Unit Test: {unit_test}")
 
+    if unit_test:
+        # Use a single-shot timer to delay test execution
+        QtCore.QTimer.singleShot(1000, lambda: run_unit_tests(main_window))
+    else:
+        rospy.loginfo("Starting GUI...")
+
+    # Start the GUI event loop
+    sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()

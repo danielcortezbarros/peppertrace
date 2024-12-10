@@ -29,8 +29,18 @@ class PepperROS1Logger():
         # List of topics to record
         self.data_to_topic_map = data_to_topic_map
         self.topics_list = self.set_topics(data_to_topic_map.keys())
+
+        # Check if running unit test
+        unit_test = rospy.get_param('~unit_test', False)
+        rospy.loginfo(f"Performing Unit Test: {unit_test}")
+
+        if unit_test:
+            # Use a single-shot timer to delay test execution
+            self.demo_dir_path = os.path.join(data_dir, "unit_test")
+        else:
+            self.demo_dir_path = os.path.join(data_dir, demo_name)
       
-        self.demo_dir_path = os.path.join(data_dir, demo_name)
+        
         if not os.path.exists(self.demo_dir_path):
             os.makedirs(self.demo_dir_path)
         self.demo_counter = 1  # Counter for demo directories
@@ -193,7 +203,7 @@ class PepperROS1Logger():
             # set topics_list
             topics = event.args["topics"]
             self.topics_list=self.set_topics(topics)
-            information = f'Set topics to record: {",".join(topics)} '
+            information = f'Set data to record: {",".join(topics)} '
 
         else:
             rospy.logwarn("Received unknown command.")

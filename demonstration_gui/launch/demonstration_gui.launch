@@ -1,6 +1,7 @@
 <!-- demonstration_gui_unit_test.launch -->
 <launch>
-    <node name="demonstration_gui" pkg="programming_by_demonstration" type="demonstration_gui_application.py" output="screen">
-        <param name="unit_test" value="true" />
+    <arg name="unit_test" default="false" />
+    <node name="demonstration_gui_node" pkg="programming_by_demonstration" type="demonstration_gui_application.py" output="screen">
+        <param name="unit_test" value="$(arg unit_test)" />
     </node>
 </launch>

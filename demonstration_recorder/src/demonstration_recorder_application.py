@@ -79,7 +79,7 @@ from std_msgs.msg import String
 
 def main():
     # Initialize the ROS node
-    rospy.init_node("demo_recorder_node", anonymous=False)
+    rospy.init_node("demonstration_recorder_node", anonymous=False)
 
     # Construct the path to the config file relative to the package path
     config_file_path = os.path.join(package_path, 'demonstration_recorder', 'config', 'demonstration_recorder_configuration.json')

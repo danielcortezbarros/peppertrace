@@ -71,7 +71,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.display_info("[WARNING] Please start demonstrate before recording")
             return
         elif cmd.startswith('START_REPLAY'):
-            rospy.loginfo(f"Thing: {self.ui.replayLineEdit.text()}")
             if self.demonstrate_running == True:
                 self.display_info("[WARNING] Please stop demonstrating before replaying motion.")
                 return

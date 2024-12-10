@@ -1,4 +1,12 @@
 <launch>
-    <!-- Run the skeletal model application -->
-    <node pkg="programming_by_demonstration" type="pepper_recording_application.py" name="pepper_recording_application" output="screen" />
+    <!-- Declare the unit_test argument -->
+    <arg name="unit_test" default="false" />
+
+    <!-- Launch the main application -->
+    <node pkg="programming_by_demonstration" type="demonstration_recorder_application.py" name="demonstration_recorder_node" output="screen">
+        <param name="unit_test" value="$(arg unit_test)" />
+    </node>
+
+    <!-- Conditionally launch the stub node if unit_test is true -->
+    <node if="$(arg unit_test)" pkg="programming_by_demonstration" type="demonstration_recorder_stub.py" name="demonstration_recorder_stub" output="screen" />
 </launch>

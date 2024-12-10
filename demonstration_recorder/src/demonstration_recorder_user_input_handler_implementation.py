@@ -31,12 +31,12 @@ class GuiInputHandler:
         # Define input map
         self.input_map = {
             'Demonstrate': {
-                'Start': 'Left mouse',
-                'Stop': 'Left mouse again'
+                'Start': 'Use GUI button',
+                'Stop': 'Use GUI button'
             },
             'Record': {
-                'Start': 'Left mouse',
-                'Stop': 'Left mouse again'
+                'Start': 'Use GUI button',
+                'Stop': 'Use GUI button'
             }
         }
 
