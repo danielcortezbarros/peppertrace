@@ -1,4 +1,6 @@
+<!-- demonstration_gui_unit_test.launch -->
 <launch>
-    <!-- Start the GUI application as a standalone Python script -->
-    <node name="pepper_demonstration_gui" pkg="programming_by_demonstration" type="gui_application.py" output="screen"/>
+    <node name="demonstration_gui" pkg="programming_by_demonstration" type="demonstration_gui_application.py" output="screen">
+        <param name="unit_test" value="true" />
+    </node>
 </launch>

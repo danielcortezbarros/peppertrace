@@ -39,7 +39,7 @@ class RosThread(QThread):
 class ROSNode:
     def __init__(self, topic_sub, topic_pub, skeletal_model_feed_topic, update_gui_signal, image_signal):
         # Initialize ROS node
-        rospy.init_node('demonstration_gui_node', anonymous=False)
+        #rospy.init_node('demonstration_gui_node', anonymous=False)
 
         self.update_gui_signal = update_gui_signal
         self.image_signal = image_signal

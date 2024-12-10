@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
-        MainWindow.setObjectName("MainWindow")
+        MainWindow.setObjectName("PepperTrace")
         MainWindow.resize(1301, 915)
         font = QtGui.QFont()
         font.setPointSize(20)
