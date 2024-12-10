@@ -2,6 +2,7 @@
 
 import rospy
 import cv2
+import subprocess
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
@@ -34,7 +35,6 @@ class ImagePublisherNode:
 
         # Publish the images as ROS messages
         rospy.loginfo("Publishing images...")
-        cv2.imshow('image',self.color_image)
 
         # Create Image messages
         color_msg = self.bridge.cv2_to_imgmsg(self.color_image, encoding="bgr8")
@@ -58,18 +58,27 @@ class ImagePublisherNode:
 
 if __name__ == "__main__":
     # Define the paths to your saved color and depth images
-    color_image_path = "/root/workspace/pepper_rob_ws/images/color_20241127_071120.png"  # Replace with your actual path
-    depth_image_path = "/root/workspace/pepper_rob_ws/images/depth_20241127_071120.png"  # Replace with your actual path
+    color_image_path = "/root/workspace/pepper_rob_ws/images/color_20241127_071120.png"  
+    depth_image_path = "/root/workspace/pepper_rob_ws/images/depth_20241127_071120.png"  
 
     try:
         node = ImagePublisherNode(color_image_path, depth_image_path)
 
-        # Publish the single pair of images multiple times
-        for _ in range(10):  # Publish 10 times to simulate a short stream
-            node.publish_images()
-            rospy.sleep(0.1)  # Wait 100ms between publications (10 Hz)
+        rospy.sleep(2)
 
-        rospy.loginfo("Published single pair of images multiple times. Shutting down.")
+        times_to_publish = 3
+        # Publish the single pair of images multiple times
+        for _ in range(times_to_publish):  # Publish 10 times to simulate a short stream
+            node.publish_images()
+            rospy.sleep(1)  
+
+        rospy.loginfo(f"Published single pair of images {times_to_publish} times. Shutting down.")
+
+        rospy.sleep(2)
+
+        # Signal shutdown for the current node
+        rospy.signal_shutdown("Unit test completed. Shutting down skeletal_model_stub.")
+        
 
     except rospy.ROSInterruptException:
         pass

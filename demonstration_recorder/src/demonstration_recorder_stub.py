@@ -49,17 +49,7 @@ def main():
         rospy.loginfo(f"Published: {replay_command}")
         rospy.sleep(4)
 
-        rospy.loginfo("Unit test sequence completed.")
-        
-        # Terminate the pepper_recording_application node
-        target_node = '/demonstration_recorder_node'
-        rospy.loginfo(f"Terminating {target_node}...")
-        try:
-            subprocess.call(['rosnode', 'kill', target_node])
-        except Exception as e:
-            rospy.logerr(f"Failed to terminate {target_node}: {e}")
-
-        rospy.loginfo("demonstration_recorder_stub finished.")
+        rospy.signal_shutdown("Unit test completed. Shutting down skeletal_model_stub.")
 
 
     except rospy.ROSInterruptException:

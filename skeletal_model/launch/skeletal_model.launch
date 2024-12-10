@@ -1,14 +1,20 @@
 <launch>
+    <!-- Declare the unit_test argument -->
+    <arg name="unit_test" default="false" />
+
     <!-- Group to ensure nodes terminate together -->
     <group>
-        <!-- Terminate the entire launch if any node in this group dies -->
-        <node name="skeletal_model_application" pkg="programming_by_demonstration" type="skeletal_model_application.py" output="screen" required="true" />
+        <!-- Launch skeletal_model_application -->
+        <node name="skeletal_model_node" pkg="programming_by_demonstration" type="skeletal_model_application.py" output="screen" required="true" />
 
-        <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <!-- Conditionally include RealSense camera launch or skeletal_model_stub -->
+        <include if="$(eval not arg('unit_test'))" file="$(find realsense2_camera)/launch/rs_camera.launch">
             <arg name="align_depth" value="true" />
             <arg name="color_fps" value="15" />
             <arg name="color_width" value="1280" />
             <arg name="color_height" value="720" />
         </include>
+
+        <node if="$(eval arg('unit_test'))" name="skeletal_model_stub" pkg="programming_by_demonstration" type="skeletal_model_stub.py" output="screen" required="true"  />
     </group>
 </launch>

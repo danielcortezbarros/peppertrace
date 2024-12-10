@@ -82,7 +82,7 @@ def main():
     with open(config_file_path, 'r') as config_file:
         config = json.load(config_file)
 
-    data_filter = DataFilter(window_size=5, filter_type="mean", gui_commands_topic=config["gui_commands_topic"])
+    data_filter = DataFilter(window_size=3, filter_type="mean", gui_commands_topic=config["gui_commands_topic"])
     human_to_pepper = HumanToPepperRetargeting()
 
     # Instantiate skeletal model class with config parameters
