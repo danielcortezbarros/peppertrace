@@ -173,13 +173,13 @@ class PepperROS1Logger():
                 information = "Data logger is already recording."
             else:
                 self.start_logging()
-                information = "Data logger is recording now."
+                information = "[INFO] RECORDING successfully."
                 self.data_logger_state = DataLoggerStates.RECORDING
 
         elif event.command == DataLoggerCommands.STOP_RECORD:
             if self.data_logger_state == DataLoggerStates.RECORDING:
                 self.stop_logging()
-                information = "Data logger is stopped"
+                information = "[INFO] STOPPED RECORDING successfully."
                 self.data_logger_state = DataLoggerStates.IDLE
             else:
                 information = "Data logger is already stopped"

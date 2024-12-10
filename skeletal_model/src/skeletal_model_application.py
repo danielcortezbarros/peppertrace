@@ -82,7 +82,16 @@ def main():
     with open(config_file_path, 'r') as config_file:
         config = json.load(config_file)
 
-    data_filter = DataFilter(window_size=3, filter_type="mean", gui_commands_topic=config["gui_commands_topic"])
+    # Check if unit tests should run
+    unit_test = rospy.get_param('~unit_test', False)
+
+    if unit_test:
+        rospy.loginfo("Performing Unit Test")
+        window_size=3
+    else:
+        window_size=5
+
+    data_filter = DataFilter(window_size=window_size, filter_type="mean", gui_commands_topic=config["gui_commands_topic"])
     human_to_pepper = HumanToPepperRetargeting()
 
     # Instantiate skeletal model class with config parameters

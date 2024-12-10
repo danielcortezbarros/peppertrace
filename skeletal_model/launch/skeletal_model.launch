@@ -5,7 +5,9 @@
     <!-- Group to ensure nodes terminate together -->
     <group>
         <!-- Launch skeletal_model_application -->
-        <node name="skeletal_model_node" pkg="programming_by_demonstration" type="skeletal_model_application.py" output="screen" required="true" />
+        <node name="skeletal_model_node" pkg="programming_by_demonstration" type="skeletal_model_application.py" output="screen" required="true" >
+            <param name="unit_test" value="$(arg unit_test)" />
+        </node>
 
         <!-- Conditionally include RealSense camera launch or skeletal_model_stub -->
         <include if="$(eval not arg('unit_test'))" file="$(find realsense2_camera)/launch/rs_camera.launch">

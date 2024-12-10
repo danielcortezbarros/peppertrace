@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
         rospy.sleep(2)
 
-        times_to_publish = 3
+        times_to_publish = 8
         # Publish the single pair of images multiple times
         for _ in range(times_to_publish):  # Publish 10 times to simulate a short stream
             node.publish_images()

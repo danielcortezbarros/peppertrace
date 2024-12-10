@@ -169,12 +169,14 @@ class SkeletalModelEstimation:
 
             if angles is not None:
                 filtered_angles = self.filter.get_filtered_angles(angles)
+                print(filtered_angles)
             else:
                 rospy.loginfo("Landmarks could not be calculated")
                 return
 
             if filtered_angles is not None:
                 self.publish_angles(filtered_angles)
+                
             else:
                 rospy.logwarn("Filter not yet ready: insufficient data in window")
                 return

@@ -1,0 +1,11 @@
+<launch>
+    <!-- Include the first launch file -->
+    <include file="$(find programming_by_demonstration)/demonstration_gui/launch/demonstration_gui.launch">
+        <!-- Pass arguments to the included launch file if needed -->
+    </include>
+
+    <!-- Include the second launch file -->
+    <include file="$(find programming_by_demonstration)/demonstration_recorder/launch/demonstration_recorder.launch">
+        <!-- Pass arguments to the included launch file if needed -->
+    </include>
+</launch>

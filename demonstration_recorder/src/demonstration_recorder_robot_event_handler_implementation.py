@@ -73,7 +73,7 @@ class PepperRobotEventHandler():
                 self.robot_connection_process.wait()
                 self.robot_connection_process = None
                 rospy.loginfo("robot_connection process stopped successfully.")
-                self.gui_publisher.publish("[INFO] ROBOT DISCONNECTED")
+                self.gui_publisher.publish("[Robot][INFO] ROBOT DISCONNECTED")
                 return True
             except Exception as e:
                 rospy.logerr(f"Failed to stop robot_connection: {str(e)}")
@@ -88,7 +88,7 @@ class PepperRobotEventHandler():
         """
         if self.robot_connection_process and self.robot_connection_process.poll() is not None:  # Process has finished
             rospy.loginfo("robot_connection process has died")
-            self.gui_publisher.publish("[INFO] ROBOT DISCONNECTED")
+            self.gui_publisher.publish("[Robot][INFO] ROBOT DISCONNECTED")
             self.robot_connection_process = None
             self.robot_state = RobotStates.DISCONNECTED
             self.robot_connection_monitor_timer.shutdown()
