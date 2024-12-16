@@ -1,9 +1,3 @@
----
-title: |
-  PepperTrace: Programming by Demonstration\
-  User Manual
----
-
 # PepperTrace: Programming By Demonstration Tool
 
 This tool is implemented in the context of the [CSSR4Africa project](https://cssr4africa.github.io/) project for programming the Pepper robot by demonstration. Users interact with the system by performing gestures in front of an RGBD camera. Human joint positions are estimated using a skeletal model from MediaPipe and retargeted to Pepper’s joint angles.
