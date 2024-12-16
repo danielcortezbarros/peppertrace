@@ -65,8 +65,13 @@ from demonstration_gui_logic_implementation import MainWindow
 
 def run_unit_tests(main_window):
     """
-    Simulates GUI interactions for testing in the main thread.
+    Runs unit tests for the skeletal model component.
+    Press of each button is simulated one by one to check functionality. 
+
+    Args:
+        main_window(MainWindow): Qt GUI window
     """
+ 
     rospy.loginfo("Running unit tests...")
 
     buttons_to_test = {

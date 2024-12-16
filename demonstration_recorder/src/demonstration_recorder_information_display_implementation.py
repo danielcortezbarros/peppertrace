@@ -20,10 +20,24 @@ import time
 
 class GuiInfoDisplay():
     def __init__(self, publisher):
+        """
+        Class constructor. GuiInfoDisplay publishes system messages to be displayed the GUI. 
+
+        Args:
+            publisher(rospy.Publisher): publisher to send messages to the GUI directly
+        """
+
         rospy.loginfo("InformationDisplay initialized")
         self.gui_publisher = publisher
 
     def display_information(self, information):
+        """
+        Publish system logs to be displayed in the GUI.
+
+        Args:
+            publisher(rospy.Publisher): publisher to send messages to the GUI directly
+        """
+
         msg = String()
         msg.data = information
 
@@ -34,6 +48,13 @@ class GuiInfoDisplay():
         rospy.loginfo(f'Displaying: "{msg.data}"')
 
     def display_input_map(self, input_map):
+        """
+        Publish the input map defined in the user input handler to be displayed in the GUI.
+
+        Args:
+            input_map(dict): dictionary mapping functionality to user-defined inputs. 
+        """
+
         msg = String()
         msg.data = 'Map,' + input_map
 

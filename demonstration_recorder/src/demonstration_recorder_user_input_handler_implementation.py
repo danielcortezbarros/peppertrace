@@ -23,10 +23,16 @@ from threading import Thread
 
 
 class GuiInputHandler:
-    def __init__(self, gui_commands_topic, freq=50):
+    def __init__(self, gui_commands_topic:str):
+        """
+        Class constructor. GuiInputHandler processes user input from the GUI buttons. 
+
+        Args:
+            gui_commands_topic(str): topic to subscribe to to receive GUI commands.
+        """
+
         rospy.loginfo("UserInputHandler initialized")
         self.event_queue = None
-        self.freq = freq
 
         # Define input map
         self.input_map = {
@@ -54,9 +60,10 @@ class GuiInputHandler:
 
     def gui_command_callback(self, msg):
         """
-        Callback for the /gui/commands topic.
+        Callback for processing GUI commands by posting the appropriate events on the GUI for the DemoRecorder to process.
 
-        :param msg: The message received from the topic (std_msgs/String).
+        Args:
+            msg(std_msgs.String): ROS String message containing GUI command
         """
         command = msg.data
         rospy.loginfo(f"Received GUI Command: {command}")
@@ -92,16 +99,20 @@ class GuiInputHandler:
 
     def set_event_queue(self, event_queue: Queue):
         """Sets the event queue where events will be posted."""
+
         self.event_queue = event_queue
         rospy.loginfo("Event queue set")
 
     def post_event(self, event_type: EventType, command=None, args: dict = {}):
         """
-        Creates and posts an event to the event queue.
+        Creates and posts events to the event queue. 
 
-        :param event_type: The type of event, as defined in EventType.
-        :param command: The actual event which is the command that should be executed.
+        Args:
+            event_type(EventType) : type of event
+            command(Union[DataLoggerCommands, RobotCommands) : command corresponding to the event type
+            args(dict) : optional arguments for the event callback
         """
+
         if self.event_queue is not None:
             event = Event(event_type, command, args)
             self.event_queue.put(event)
@@ -115,180 +126,180 @@ class GuiInputHandler:
 
 
 
-class KeyboardInputHandler():
-    def __init__(self, freq=50):
-        rospy.loginfo("UserInputHandler initialized")
-        self.event_queue = None
+# class KeyboardInputHandler():
+#     def __init__(self, freq=50):
+#         rospy.loginfo("UserInputHandler initialized")
+#         self.event_queue = None
 
-        # Use only regular keys for the input map
-        self.freq = freq
-        self.input_map = {
-            'START': '1',
-            'PAUSE': '2',
-            'SAVE': '3',
-            'SAVE_SNAPSHOT': '4',
-            'DISCARD': '5',
-            'VISUALIZE': '6',
-            'STOP': '0',
-            'POSITION': 'p', 
-            'GRAV_COMP': 'g',  
-            'RESET': 'r',  
-            'PREPARE': 'a', 
-            'OPEN_GRIPPER': '7',
-            'CLOSE_GRIPPER': '8',
-        }
+#         # Use only regular keys for the input map
+#         self.freq = freq
+#         self.input_map = {
+#             'START': '1',
+#             'PAUSE': '2',
+#             'SAVE': '3',
+#             'SAVE_SNAPSHOT': '4',
+#             'DISCARD': '5',
+#             'VISUALIZE': '6',
+#             'STOP': '0',
+#             'POSITION': 'p', 
+#             'GRAV_COMP': 'g',  
+#             'RESET': 'r',  
+#             'PREPARE': 'a', 
+#             'OPEN_GRIPPER': '7',
+#             'CLOSE_GRIPPER': '8',
+#         }
 
-        # Start the listener directly without extra threads
-        self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
-        self.listener.start()
+#         # Start the listener directly without extra threads
+#         self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+#         self.listener.start()
 
-    def on_press(self, key):
-        try:
-            if hasattr(key, 'char') and key.char is not None:
-                if key.char == self.input_map['START']:
-                    rospy.loginfo("Starting Data Logging")
-                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START)
-                elif key.char == self.input_map['PAUSE']:
-                    rospy.loginfo("Pausing Data Logging")
-                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.PAUSE)
-                elif key.char == self.input_map['SAVE']:
-                    rospy.loginfo("Saving Data")
-                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SAVE)
-                elif key.char == self.input_map['SAVE_SNAPSHOT']:
-                    rospy.loginfo("Saving Snapshot of Data")
-                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SAVE_SNAPSHOT)
-                elif key.char == self.input_map['DISCARD']:
-                    rospy.loginfo("Discarding Data")
-                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.DISCARD)
-                elif key.char == self.input_map['VISUALIZE']:
-                    rospy.loginfo("Visualizing Data")
-                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.VISUALIZE)
-                elif key.char == self.input_map['STOP']:
-                    rospy.loginfo("Stopping Data Logging")
-                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.STOP)
-                elif key.char == self.input_map['POSITION']:
-                    rospy.loginfo("Switching to Position Control")
-                    self.post_event(EventType.ROBOT_CONTROL, RobotCommands.POSITION_CTRL)
-                elif key.char == self.input_map['GRAV_COMP']:
-                    rospy.loginfo("Switching to Gravity Compensation")
-                    self.post_event(EventType.ROBOT_CONTROL, RobotCommands.GRAV_COMP)
-                elif key.char == self.input_map['RESET']:
-                    rospy.loginfo("Resetting Robot")
-                    self.post_event(EventType.ROBOT_CONTROL, RobotCommands.RESET)
-                elif key.char == self.input_map['PREPARE']:
-                    rospy.loginfo("Preparing Robot")
-                    self.post_event(EventType.ROBOT_CONTROL, RobotCommands.PREPARE)
+#     def on_press(self, key):
+#         try:
+#             if hasattr(key, 'char') and key.char is not None:
+#                 if key.char == self.input_map['START']:
+#                     rospy.loginfo("Starting Data Logging")
+#                     self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START)
+#                 elif key.char == self.input_map['PAUSE']:
+#                     rospy.loginfo("Pausing Data Logging")
+#                     self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.PAUSE)
+#                 elif key.char == self.input_map['SAVE']:
+#                     rospy.loginfo("Saving Data")
+#                     self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SAVE)
+#                 elif key.char == self.input_map['SAVE_SNAPSHOT']:
+#                     rospy.loginfo("Saving Snapshot of Data")
+#                     self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SAVE_SNAPSHOT)
+#                 elif key.char == self.input_map['DISCARD']:
+#                     rospy.loginfo("Discarding Data")
+#                     self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.DISCARD)
+#                 elif key.char == self.input_map['VISUALIZE']:
+#                     rospy.loginfo("Visualizing Data")
+#                     self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.VISUALIZE)
+#                 elif key.char == self.input_map['STOP']:
+#                     rospy.loginfo("Stopping Data Logging")
+#                     self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.STOP)
+#                 elif key.char == self.input_map['POSITION']:
+#                     rospy.loginfo("Switching to Position Control")
+#                     self.post_event(EventType.ROBOT_CONTROL, RobotCommands.POSITION_CTRL)
+#                 elif key.char == self.input_map['GRAV_COMP']:
+#                     rospy.loginfo("Switching to Gravity Compensation")
+#                     self.post_event(EventType.ROBOT_CONTROL, RobotCommands.GRAV_COMP)
+#                 elif key.char == self.input_map['RESET']:
+#                     rospy.loginfo("Resetting Robot")
+#                     self.post_event(EventType.ROBOT_CONTROL, RobotCommands.RESET)
+#                 elif key.char == self.input_map['PREPARE']:
+#                     rospy.loginfo("Preparing Robot")
+#                     self.post_event(EventType.ROBOT_CONTROL, RobotCommands.PREPARE)
 
-            # Handle special keys like Ctrl or others (terminate event)
-            elif key == keyboard.Key.ctrl or key == keyboard.Key.esc:  # Add any other termination keys
-                self.listener.stop()  # Stop the listener when the special key is pressed
-                rospy.loginfo("Special key pressed, sending terminate event")
-                self.post_event(EventType.TERMINATE)
-
-
-        except AttributeError:
-            pass
-
-    def on_release(self, key):
-        try:
-            if hasattr(key, 'char'):
-                if key.char == self.input_map['OPEN_GRIPPER']:
-                    rospy.loginfo("Opening Gripper")
-                    self.post_event(EventType.ROBOT_CONTROL, RobotCommands.OPEN_GRIPPER)
-                elif key.char == self.input_map['CLOSE_GRIPPER']:
-                    rospy.loginfo("Closing Gripper")
-                    self.post_event(EventType.ROBOT_CONTROL, RobotCommands.CLOSE_GRIPPER)
-        except AttributeError as e:
-            print(e)
-
-    def get_input_map(self) -> dict:
-        return self.input_map
-
-    def set_event_queue(self, event_queue: Queue):
-        """Sets the event queue where events will be posted."""
-
-        self.event_queue = event_queue
-        rospy.loginfo("Setting event queue")
-
-    def post_event(self, event_type: EventType, command=None):
-        """
-        Creates and posts an event to the event queue.
-
-        :param event_type: The type of event, as defined in EventType.
-        :param command: The actual event which is the command that should be executed
-                        This should come from a Commands Enum defined in states_and_events.py
-        """
-        if self.event_queue is not None:
-            event = Event(event_type, command)
-            self.event_queue.put(event)
-            rospy.loginfo(f"Event posted. Type: {event_type}, Command: {command}")
-        else:
-            rospy.logerr("Event queue is not set.")
-
-    def cleanup(self):
-        rospy.loginfo("Exited Input Handler")
+#             # Handle special keys like Ctrl or others (terminate event)
+#             elif key == keyboard.Key.ctrl or key == keyboard.Key.esc:  # Add any other termination keys
+#                 self.listener.stop()  # Stop the listener when the special key is pressed
+#                 rospy.loginfo("Special key pressed, sending terminate event")
+#                 self.post_event(EventType.TERMINATE)
 
 
+#         except AttributeError:
+#             pass
 
-class MouseInputHandler():
-    def __init__(self, freq=50):
-        rospy.loginfo("UserInputHandler initialized")
-        self.event_queue = None
+#     def on_release(self, key):
+#         try:
+#             if hasattr(key, 'char'):
+#                 if key.char == self.input_map['OPEN_GRIPPER']:
+#                     rospy.loginfo("Opening Gripper")
+#                     self.post_event(EventType.ROBOT_CONTROL, RobotCommands.OPEN_GRIPPER)
+#                 elif key.char == self.input_map['CLOSE_GRIPPER']:
+#                     rospy.loginfo("Closing Gripper")
+#                     self.post_event(EventType.ROBOT_CONTROL, RobotCommands.CLOSE_GRIPPER)
+#         except AttributeError as e:
+#             print(e)
 
-        # Use only regular keys for the input map
-        self.freq = freq
-        self.input_map = {
-            'START': 'LEFT',
-            'SAVE': 'LEFT AGAIN',
-        }
+#     def get_input_map(self) -> dict:
+#         return self.input_map
 
-        # Start the listener directly without extra threads
-        self.listener = mouse.Listener(on_click=self.on_click)
-        self.listener.start()
-        rospy.loginfo("Started mouse listener")
+#     def set_event_queue(self, event_queue: Queue):
+#         """Sets the event queue where events will be posted."""
 
-        self.recording = False
+#         self.event_queue = event_queue
+#         rospy.loginfo("Setting event queue")
 
-    def on_click(self, x, y, button, pressed):
-        if pressed:
-            if button == mouse.Button.left:
-                if self.recording == False:
-                    rospy.loginfo("Starting Data Logging")
-                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START)
-                    self.recording = True
-                else:
-                    rospy.loginfo("Saving Data")
-                    self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SAVE)
-                    self.recording = False
-            elif button == mouse.Button.button9:
-                rospy.loginfo("Stop button pushed. Terminating listener.")
-                self.listener.stop() 
-                self.post_event(EventType.TERMINATE)
+#     def post_event(self, event_type: EventType, command=None):
+#         """
+#         Creates and posts an event to the event queue.
+
+#         :param event_type: The type of event, as defined in EventType.
+#         :param command: The actual event which is the command that should be executed
+#                         This should come from a Commands Enum defined in states_and_events.py
+#         """
+#         if self.event_queue is not None:
+#             event = Event(event_type, command)
+#             self.event_queue.put(event)
+#             rospy.loginfo(f"Event posted. Type: {event_type}, Command: {command}")
+#         else:
+#             rospy.logerr("Event queue is not set.")
+
+#     def cleanup(self):
+#         rospy.loginfo("Exited Input Handler")
 
 
-    def get_input_map(self) -> dict:
-        return self.input_map
 
-    def set_event_queue(self, event_queue: Queue):
-        """Sets the event queue where events will be posted."""
+# class MouseInputHandler():
+#     def __init__(self, freq=50):
+#         rospy.loginfo("UserInputHandler initialized")
+#         self.event_queue = None
 
-        self.event_queue = event_queue
-        rospy.loginfo("Setting event queue")
+#         # Use only regular keys for the input map
+#         self.freq = freq
+#         self.input_map = {
+#             'START': 'LEFT',
+#             'SAVE': 'LEFT AGAIN',
+#         }
 
-    def post_event(self, event_type: EventType, command=None):
-        """
-        Creates and posts an event to the event queue.
+#         # Start the listener directly without extra threads
+#         self.listener = mouse.Listener(on_click=self.on_click)
+#         self.listener.start()
+#         rospy.loginfo("Started mouse listener")
 
-        :param event_type: The type of event, as defined in EventType.
-        :param command: The actual event which is the command that should be executed
-                        This should come from a Commands Enum defined in states_and_events.py
-        """
-        if self.event_queue is not None:
-            event = Event(event_type, command)
-            self.event_queue.put(event)
-            rospy.loginfo(f"Event posted. Type: {event_type}, Command: {command}")
-        else:
-            rospy.logerr("Event queue is not set.")
+#         self.recording = False
 
-    def cleanup(self):
-        rospy.loginfo("Exited Input Handler")
+#     def on_click(self, x, y, button, pressed):
+#         if pressed:
+#             if button == mouse.Button.left:
+#                 if self.recording == False:
+#                     rospy.loginfo("Starting Data Logging")
+#                     self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START)
+#                     self.recording = True
+#                 else:
+#                     rospy.loginfo("Saving Data")
+#                     self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SAVE)
+#                     self.recording = False
+#             elif button == mouse.Button.button9:
+#                 rospy.loginfo("Stop button pushed. Terminating listener.")
+#                 self.listener.stop() 
+#                 self.post_event(EventType.TERMINATE)
+
+
+#     def get_input_map(self) -> dict:
+#         return self.input_map
+
+#     def set_event_queue(self, event_queue: Queue):
+#         """Sets the event queue where events will be posted."""
+
+#         self.event_queue = event_queue
+#         rospy.loginfo("Setting event queue")
+
+#     def post_event(self, event_type: EventType, command=None):
+#         """
+#         Creates and posts an event to the event queue.
+
+#         :param event_type: The type of event, as defined in EventType.
+#         :param command: The actual event which is the command that should be executed
+#                         This should come from a Commands Enum defined in states_and_events.py
+#         """
+#         if self.event_queue is not None:
+#             event = Event(event_type, command)
+#             self.event_queue.put(event)
+#             rospy.loginfo(f"Event posted. Type: {event_type}, Command: {command}")
+#         else:
+#             rospy.logerr("Event queue is not set.")
+
+#     def cleanup(self):
+#         rospy.loginfo("Exited Input Handler")

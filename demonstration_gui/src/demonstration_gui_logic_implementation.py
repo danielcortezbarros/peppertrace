@@ -29,6 +29,15 @@ import rospy
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, gui_system_logs_topic, gui_commands_topic, skeletal_model_feed_topic, parent=None):
+        """
+        Class constructor. MainWindow implements the logic for handling incoming ROS messages and updating the GUI.
+
+        Args:
+            gui_system_logs_topic(str): Topic to receive system logs for display in the system logs box
+            gui_commands_topic(str): Topic to send commands to the system 
+            skeletal_model_feed_topic(str): Topic to receive images with skeletal model overlay for display
+        """
+
         super(MainWindow, self).__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
@@ -51,6 +60,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.connect_gui_buttons()
 
     def connect_gui_buttons(self):
+        """Connect GUI buttons to their callback functions."""
+
         self.ui.connectButton.clicked.connect(lambda: self.send_command(f'CONNECT,{self.ui.robotIP.text()},{self.ui.port.text()}'))
         self.ui.startDemonstrateButton.clicked.connect(lambda: self.send_command('START_DEMONSTRATE'))
         self.ui.stopDemonstrateButton.clicked.connect(lambda: self.send_command('STOP_DEMONSTRATE'))
@@ -67,6 +78,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.imagesCheck.stateChanged.connect(self.update_data_to_record)
 
     def send_command(self, cmd):
+        """
+        Send command to the system over the gui_commands_topic. 
+        Depending on which button was pressed, check conditions, otherwise just forward the command.
+
+        Args:
+            cmd(str): command to send to the system. 
+        """
+
         if cmd == 'START_RECORD' and self.demonstrate_running == False:
             self.display_info("[WARNING] Please start demonstrate before recording")
             return
@@ -91,6 +110,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.replayLineEdit.setText(file_name)
 
     def update_filter(self):
+        """ Sends signal to the system to change the filter applied to the skeletal model data."""
+
         sender = self.sender() 
         if sender.isChecked():
             if sender.text() == "Biological Motion":
@@ -99,7 +120,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.ros_thread.publish_signal.emit("FILTERbutterworth")
 
     def update_data_to_record(self):
-        """Construct and publish the record command based on checked checkboxes."""
+        """Construct and publish what types of data to record based on checked checkboxes."""
+
         data_to_record = []
         if self.ui.estimatedAnglesCheck.isChecked():
             data_to_record.append("estimated_angles")
@@ -118,10 +140,19 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(str)
     def display_info(self, info):
+        """
+        Function connected to a pyqtSignal, which forwards ROS messages on the gui_system_logs_topic
+        Display system information in the system logs box. 
+        Handle icon changes depending on the information to signal state changes to the user. 
 
-        # display input map
+        Args:
+            info(str): information from the system
+        """
+
+        
         if info.startswith("Map"):
 
+            # Display input map
             _, map_str = info.split(",", 1)
             map_dict = json.loads(map_str)
 
@@ -142,7 +173,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.systemLogsBox.append(formatted_text)
             self.ui.systemLogsBox.verticalScrollBar().setValue(self.ui.systemLogsBox.verticalScrollBar().maximum())
 
-            # change GUI images
+            # Update GUI images
             if "ERROR" not in info:
                 if "ROBOT CONNECTED" in info:
                     self.ui.connectButton.setText("DISCONNECT")
@@ -172,7 +203,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(np.ndarray)
     def display_image_feed(self, cv_image):
-        # Convert BGR to RGB
+        """
+        Function connected to a pyqtSignal, which forwards ROS images on the skeletal_model_feed_topic for display.
+
+        Args:
+            cv_image(np.array): Image with skeletal model overlay
+        """
+
+        # Convert image from BGR to RGB
         cv_image_rgb = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
 
         # Convert to QImage and QPixmap

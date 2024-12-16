@@ -28,17 +28,6 @@ from skeletal_model_filters_implementation import DataFilter
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from std_msgs.msg import String
 
-# Decorator to measure the execution time
-def timeit(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print(f"Execution time of {func.__name__}: {execution_time:.4f} seconds")
-        return result
-    return wrapper
-
 
 def pixel_to_3d_camera_coords(x, y, depth, K_matrix):
     """
@@ -93,16 +82,6 @@ class SkeletalModelEstimation:
         self.bridge = CvBridge()  # Initialize the CvBridge class
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_pose = mp.solutions.pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-        self.mp_landmark_indices = [
-            mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value,
-            mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER.value,
-            mp.solutions.pose.PoseLandmark.LEFT_ELBOW.value,
-            mp.solutions.pose.PoseLandmark.RIGHT_ELBOW.value,
-            mp.solutions.pose.PoseLandmark.LEFT_WRIST.value,
-            mp.solutions.pose.PoseLandmark.RIGHT_WRIST.value,
-            mp.solutions.pose.PoseLandmark.LEFT_HIP.value,
-            mp.solutions.pose.PoseLandmark.RIGHT_HIP.value,
-        ]
 
         self.image_lock = threading.Lock()
         self.latest_image = None

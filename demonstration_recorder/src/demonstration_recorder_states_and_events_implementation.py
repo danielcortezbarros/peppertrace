@@ -19,8 +19,6 @@ from typing import Union
 
 
 class EventType(Enum):
-    """Generic event types."""
-
     DATA_LOGGING = 0
     ROBOT_CONTROL = 1
     TERMINATE = 2
@@ -52,15 +50,16 @@ class RobotStates(Enum):
 
 
 class Event:
-    """A generic event class that can encapsulate any type of event."""
-
     def __init__(self, event_type: EventType, command:Union[DataLoggerCommands, RobotCommands]=None, args:dict={}):
         """
-        Creates an event with specified information.
-        :param event_type: Type of the event (DATA_LOGGING or ROBOT_CONTROL)
-        :param command: Event
-        :param info: Information string
+        Class constructor. Event is a generic event class that can encapsulate any type of event.
+
+        Args:
+            event_type(EventType) : type of event
+            command(Union[DataLoggerCommands, RobotCommands) : command corresponding to the event type
+            args(dict) : optional arguments for the event callback
         """
+
         self.event_type = event_type
         self.command = command
         self.args = args

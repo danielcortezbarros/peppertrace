@@ -39,6 +39,14 @@ def launch_ros_subprocess(command: list):
 class PepperRobotEventHandler():
 
     def __init__(self, publisher):
+        """
+        Class constructor. PepperRobotEventHandler contains functions to connect/disconnect to the robot and start/stop demonstration.
+        It also monitors the corresponding processes. 
+
+        Args:
+            publisher(rospy.Publisher): publisher to send messages to the GUI directly
+        """
+
         rospy.loginfo("RobotEventHandler initialized")
         self.robot_state = RobotStates.DISCONNECTED
         self.demonstrate_process = None  # To store the demonstrate process
@@ -49,6 +57,18 @@ class PepperRobotEventHandler():
     
 
     def connect(self, robot_ip: str, port: str, network_interface: str = "eth0") -> bool:
+        """
+        Connects to the robot by launching a ROS node in a subprocess that achieves this.
+
+        Args:
+            robot_ip(str): IP Adress of the robot
+            port(str): Port the robot is connected to
+            network_interface(str): WLAN network interface designation
+
+        Returns:
+            success(bool): True if connected, False if connection attempt failed
+        """
+
         rospy.loginfo(f"Connecting to {robot_ip}:{port} on {network_interface}...")
 
         command = [
@@ -66,6 +86,13 @@ class PepperRobotEventHandler():
             return False
 
     def disconnect(self) -> bool:
+        """
+        Disconnects from the robot by stopping the running process that manages the connection to the robot.
+
+        Returns:
+            success(bool): True if disconnected, False if disconnection attempt failed
+        """
+
         if self.robot_connection_process is not None:
             rospy.loginfo("Disconnecting robot...")
             try:
@@ -83,9 +110,8 @@ class PepperRobotEventHandler():
             return False
 
     def _monitor_robot_connection_process(self, event):
-        """
-        Periodically checks if the robot_connection process has ended.
-        """
+        """Periodically checks if the robot_connection process has ended."""
+
         if self.robot_connection_process and self.robot_connection_process.poll() is not None:  # Process has finished
             rospy.loginfo("robot_connection process has died")
             self.gui_publisher.publish("[Robot][INFO] ROBOT DISCONNECTED")
@@ -95,6 +121,13 @@ class PepperRobotEventHandler():
 
 
     def start_demonstrate(self) -> bool:
+        """
+        Starts replay process to reproduce previously demonstrated movements. 
+
+        Returns:
+            success(bool): True if replaying, False if replay attempt failed
+        """
+
         rospy.loginfo("Starting demonstrate...")
 
         command = [
@@ -111,6 +144,13 @@ class PepperRobotEventHandler():
             return False
 
     def stop_demonstrate(self) -> bool:
+        """
+        Stops demonstration process by stopping the running process that manages it.
+
+        Returns:
+            success(bool): True if replay stopped, False if stopping attempt failed
+        """
+
         if self.demonstrate_process is not None:
             rospy.loginfo("Stopping demonstrate...")
             try:
@@ -127,9 +167,8 @@ class PepperRobotEventHandler():
             return False
     
     def _monitor_demonstrate_process(self, event):
-        """
-        Periodically checks if the demonstrate process has ended.
-        """
+        """ Periodically checks if the demonstrate process has ended."""
+
         if self.demonstrate_process and self.demonstrate_process.poll() is not None:  # Process has finished
             rospy.loginfo("Demonstrate process has died")
             self.gui_publisher.publish("[ERROR] STOPPED DEMONSTRATING due to error in skeletal_model or camera.")
@@ -141,8 +180,8 @@ class PepperRobotEventHandler():
         """
         Robot Control event handler.
         This function is called by the DemoRecorder whenever a Robot Control Event is registered in the queue.
-        It is best not to change this function.
         """
+
         information = ""
         if event.command == RobotCommands.CONNECT:
             connected = self.connect(robot_ip=event.args["robot_ip"], port=event.args["port"])

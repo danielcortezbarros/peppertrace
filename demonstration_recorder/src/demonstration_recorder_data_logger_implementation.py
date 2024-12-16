@@ -23,6 +23,16 @@ import subprocess
 
 class PepperROS1Logger():
     def __init__(self, data_to_topic_map, data_dir, demo_name, publisher):
+        """
+        Class constructor. PepperROS1Logger contains methods for managing recording and replaying demonstrations.
+
+        Args:
+            data_to_topic_map(dict): Dictionary that maps types of data to the topics they can be recorded from
+            data_dir(str): Base directory where the demonstration data should be stored
+            demo_name(str): Directory where set of demonstrations should be stored (for one movement for example)
+            publisher(rospy.Publisher): publisher to send messages to the GUI directly
+        """
+
         rospy.loginfo("DataLogger initialized")
         self.data_logger_state = DataLoggerStates.IDLE
 
@@ -39,7 +49,6 @@ class PepperROS1Logger():
             self.demo_dir_path = os.path.join(data_dir, "unit_test")
         else:
             self.demo_dir_path = os.path.join(data_dir, demo_name)
-      
         
         if not os.path.exists(self.demo_dir_path):
             os.makedirs(self.demo_dir_path)
@@ -51,19 +60,16 @@ class PepperROS1Logger():
         # Construct the path to the config file relative to the package path
         self.rosbag_script_path = os.path.join(package_path, 'demonstration_recorder', 'src', 'demonstration_recorder_rosbag_recorder_implementation.py')
 
-        # Recorder for managing bag recording
-        self.record_processes = None  # Process for running recording
+        self.record_processes = None  
         self.replay_processes = None
-
-        self.gui_publisher=publisher
-
         self.replay_monitor_timer = None
+       
+        self.gui_publisher=publisher
 
 
     def start_logging(self):
-        """
-        Start recording the ROS bag in a separate process for each topic.
-        """
+        """ Start recording the ROS bag in a separate process for each topic."""
+
         if self.data_logger_state == DataLoggerStates.IDLE:
 
             self.record_processes = []  # Store references to processes for each topic
@@ -89,6 +95,7 @@ class PepperROS1Logger():
         Stop recording the ROS bag and release resources.
         Gracefully terminate the recording process.
         """
+
         if self.data_logger_state == DataLoggerStates.RECORDING:
             rospy.loginfo("Stopping the recording process...")
             for process in self.record_processes:
@@ -102,9 +109,8 @@ class PepperROS1Logger():
 
 
     def start_replay(self, file_path):
-        """
-        Start replaying a ROS bag file in a separate process.
-        """
+        """ Start replaying a ROS bag file in a separate process."""
+
         if self.data_logger_state == DataLoggerStates.IDLE:
             if os.path.exists(file_path):
                 rospy.loginfo(f"Starting replay of {file_path}")
@@ -119,9 +125,8 @@ class PepperROS1Logger():
 
 
     def stop_replay(self):
-        """
-        Stop replaying the ROS bag file and release resources.
-        """
+        """ Stop replaying the ROS bag file and release resources."""
+
         if self.data_logger_state == DataLoggerStates.REPLAYING:
             rospy.loginfo("Stopping replay process...")
             self.replay_process.terminate()
@@ -135,9 +140,8 @@ class PepperROS1Logger():
 
 
     def _monitor_replay_process(self, event):
-        """
-        Periodically checks if the replay process has ended.
-        """
+        """ Periodically check if the replay process has ended."""
+
         if self.replay_process and self.replay_process.poll() is not None:  # Process has finished
             rospy.loginfo("Replay process completed.")
             self.replay_process = None
@@ -146,6 +150,8 @@ class PepperROS1Logger():
 
 
     def set_topics(self, data_list):
+        """ Set the topics which ought to be recorded by extracting them from the data_to_topic_map. """
+
         topic_list = []
         for data in data_list:
             if data in self.data_to_topic_map:  # Ensure the data is available as a key in data_to_topic_map
@@ -164,8 +170,8 @@ class PepperROS1Logger():
         """
         Data logging event handler.
         This function is called by the DemoRecorder whenever a Data Logging Event is registered in the queue.
-        It is best not to change this function.
         """
+
         rospy.loginfo(f"Received event: {event.command}")
         information = ""
         if event.command == DataLoggerCommands.START_RECORD:
@@ -212,9 +218,8 @@ class PepperROS1Logger():
     
 
     def cleanup(self):
-        """
-        Destructor to ensure any resources are properly released.
-        """
+        """ Destructor to ensure any resources are properly released."""
+
         self.stop_logging()
         rospy.loginfo("Exited Data Logger")
 

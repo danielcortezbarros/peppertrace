@@ -24,9 +24,20 @@ class DemoRecorder:
         self,
         user_input_handler: object,
         robot_event_handler: object,
-        data_logger:object,
-        information_display:object,
+        data_logger: object,
+        information_display: object,
     ):
+
+        """
+        Class constructor. DemoRecorder orchestrates the demonstration recording system. 
+
+        Args:
+            user_input_handler(UserInputHandler): Class instance of the user input handler to process user input
+            robot_event_handler(RobotEventHandler): Class instance of the robot event handler to control the robot
+            data_logger(DataLogger): Class instance of the data logger to record and replay demonstration data.
+            information_display(InformationDisplay): Class instance of the demonstration display to show system logs in the GUI
+        """
+
         rospy.loginfo("DemoRecorder initialized")
 
         self.event_queue = Queue()
@@ -34,14 +45,16 @@ class DemoRecorder:
         self.robot_event_handler = robot_event_handler
         self.data_logger = data_logger
         self.user_input_handler.set_event_queue(self.event_queue)
-
         self.information_display = information_display
         input_map = json.dumps(self.user_input_handler.get_input_map())
         self.information_display.display_input_map(input_map)
 
 
     def record_demo(self):
-        rospy.loginfo("System ready to start recording")
+        """
+        System event loop function. Processes events from a queue by delegating them to the appropriate handler and forwarding 
+        the handler's information for display
+        """
 
         while not rospy.is_shutdown():
             try:

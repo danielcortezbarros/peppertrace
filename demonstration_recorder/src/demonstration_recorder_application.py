@@ -91,9 +91,9 @@ def main():
     print("Loaded config:", config)
 
     gui_publisher=rospy.Publisher(config["gui_system_logs_topic"], String, queue_size=10)
+    
 
-
-    # Initialize handlers and logger
+    # Initialize subcomponents
     robot_control_handler = PepperRobotEventHandler(publisher=gui_publisher)
     information_display = GuiInfoDisplay(publisher=gui_publisher)
     user_input = GuiInputHandler(gui_commands_topic=config["gui_commands_topic"])
@@ -103,12 +103,12 @@ def main():
                                    publisher=gui_publisher
                                    ) 
 
-    # Create the DemoRecorder object with the initialized handlers and logger
+    # Create the DemoRecorder object to orchestrate system
     demo_recorder = DemoRecorder(
         user_input, robot_control_handler, data_logger, information_display
     )
 
-    # Start recording the demo
+    # Start the system loop
     demo_recorder.record_demo()
 
 
