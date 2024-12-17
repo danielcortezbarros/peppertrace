@@ -23,8 +23,6 @@ tutorial is targeted for Windows users.
     docker --version
 
 
-
-
 **Step 2**: Pull the PepperTrace Docker image. This takes a while depending on
     your internet connection. The image is still quite heavy and will be
     reduced in future versions of the software. After installing, verify
@@ -80,7 +78,7 @@ From the second time onwards, simply run the existing container and start an int
     docker start peppertrace-container
     docker run exec -it peppertrace-container bin/bash
 
-If you change locations, you need to update the $DISPLAY variable with the new IP address by running ```export DISPLAY=$DISPLAY:0.0```. Replace $DISPLAY with the current IP address. 
+If you change locations, you need to update the $DISPLAY variable with the new IP address by running ```echo 'export DISPLAY=$DISPLAY:0.0' >> ~/.bashrc```. Replace $DISPLAY with the current IP address. 
 
 
 **Step 4**: Pull the latest changes from the Github repository:
