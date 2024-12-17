@@ -4,11 +4,19 @@ import rospy
 import subprocess
 from std_msgs.msg import String
 
+file_path = ""
+
 def callback(msg):
+    global file_path
+
+    if msg.data.startswith("/"):
+        file_path = msg.data
     rospy.loginfo(msg.data)
 
 def main():
     # Initialize the node
+    global file_path
+
     rospy.init_node('demonstration_recorder_unit_test', anonymous=False)
     
     # Publishers and Subscribers
@@ -44,7 +52,8 @@ def main():
         rospy.sleep(2)
 
         # Step 5: Publish "START_REPLAY,/root/workspace/demo_data/unit_test/demo_1_demonstration_recorder_unit_test.bag" to /gui/commands
-        replay_command = "START_REPLAY,/root/workspace/demo_data/unit_test/demo_1_demonstration_recorder_unit_test.bag"
+        rospy.loginfo(f"Replaying {file_path}")
+        replay_command = f"START_REPLAY,{file_path}"
         gui_commands_pub.publish(replay_command)
         rospy.loginfo(f"Published: {replay_command}")
         rospy.sleep(4)

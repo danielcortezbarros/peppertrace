@@ -1,4 +1,4 @@
-""" angle_calculation_implementation.py Calculates Pepper angles from mediapipe landmarks
+""" skeletal_model_retargeting_implementation.py Calculates Pepper angles from mediapipe landmarks
 
     Author:Daniel Barros
     Date: November 21, 2024

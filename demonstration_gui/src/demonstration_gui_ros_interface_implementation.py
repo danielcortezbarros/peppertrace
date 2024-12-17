@@ -22,6 +22,9 @@ import numpy as np
 from cv_bridge import CvBridge
 
 class RosThread(QThread):
+    update_gui_signal = pyqtSignal(str)
+    image_signal = pyqtSignal(np.ndarray)
+    publish_signal = pyqtSignal(str)
 
     def __init__(self, topic_sub, topic_pub, skeletal_model_feed_topic):
         """
@@ -35,9 +38,6 @@ class RosThread(QThread):
         """
 
         super().__init__()
-        self.update_gui_signal = pyqtSignal(str)
-        self.image_signal = pyqtSignal(np.ndarray)
-        self.publish_signal = pyqtSignal(str)
 
         # Initialize the ROS node and connect the publish_signal
         self.ros_node = RosNode(topic_sub, topic_pub, skeletal_model_feed_topic, self.update_gui_signal, self.image_signal)

@@ -15,7 +15,7 @@ This program comes with ABSOLUTELY NO WARRANTY.
 """
 
 from demonstration_recorder_states_and_events_implementation import Event, EventType, DataLoggerCommands, RobotCommands
-from pynput import keyboard, mouse
+#from pynput import keyboard, mouse
 import rospy
 from queue import Queue
 from std_msgs.msg import String

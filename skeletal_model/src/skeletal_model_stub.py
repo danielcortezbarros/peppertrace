@@ -8,6 +8,8 @@ from cv_bridge import CvBridge
 
 class ImagePublisherNode:
     def __init__(self, color_image_path, depth_image_path):
+        """Stub node for publishing unit test images for skeletal model. """
+
         # Initialize ROS node
         rospy.init_node('image_publisher', anonymous=True)
 
@@ -30,6 +32,8 @@ class ImagePublisherNode:
             raise FileNotFoundError(f"Depth image not found at {depth_image_path}")
 
     def publish_images(self):
+        """ Publish synchronized visual and depth images on respective ROS topics. """
+
         # Get the current ROS time
         current_time = rospy.Time.now()
 

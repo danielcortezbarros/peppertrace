@@ -28,13 +28,13 @@ class Ui_MainWindow(object):
             main_window(MainWindow): Qt GUI window
         """
 
-        MainWindow.setObjectName("PepperTrace")
-        MainWindow.resize(1301, 915)
+        main_window.setObjectName("MainWindow")
+        main_window.resize(1301, 915)
         font = QtGui.QFont()
         font.setPointSize(20)
         font.setKerning(True)
-        MainWindow.setFont(font)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        main_window.setFont(font)
+        self.centralwidget = QtWidgets.QWidget(main_window)
         self.centralwidget.setStyleSheet("QWidget#centralwidget {\n"
 "     background-color:black;\n"
 "}\n"
@@ -384,19 +384,19 @@ class Ui_MainWindow(object):
         font.setKerning(True)
         self.browseButton.setFont(font)
         self.browseButton.setObjectName("browseButton")
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
+        main_window.setCentralWidget(self.centralwidget)
+        self.menubar = QtWidgets.QMenuBar(main_window)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1301, 22))
         self.menubar.setObjectName("menubar")
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        main_window.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(main_window)
         self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
+        main_window.setStatusBar(self.statusbar)
 
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        self.retranslateUi(main_window)
+        QtCore.QMetaObject.connectSlotsByName(main_window)
 
-    def retranslateUi(self, MainWindow):
+    def retranslateUi(self, main_window):
         """
         Sets text of UI elements
 
@@ -404,7 +404,7 @@ class Ui_MainWindow(object):
             main_window(MainWindow): Qt GUI window
         """
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        main_window.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label_2.setText(_translate("MainWindow", "Record"))
         self.startRecordButton.setText(_translate("MainWindow", "START"))
         self.stopRecordButton.setText(_translate("MainWindow", "STOP"))

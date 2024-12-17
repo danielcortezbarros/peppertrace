@@ -1,4 +1,4 @@
-""" skeletal_model_implementation.py Implements skeletal tracking from images to Pepper angles
+""" skeletal_model_estimation_implementation.py Implements skeletal tracking from images to Pepper angles
 
     Author:Daniel Barros
     Date: November 21, 2024
@@ -75,6 +75,21 @@ class SkeletalModelEstimation:
                  skeletal_model_feed_topic,
                  data_filter,
                  retargeting):
+        """
+        Class constructor. SkeletalModelEstimation processes visual and depth images and outputs Pepper angles.
+
+        Args:
+            camera_intrinsics(np.array): intrinsic camera matrix K
+            image_width(int): width of the image in pixels
+            image_height(int): height of the image in pixels
+            color_image_topic(str): topic to receive visual images
+            depth_image_topic(str): topic to receive depth images
+            left_arm_command_topic(str): topic to publish joint angles for the left arm controller
+            right_arm_command_topic(str): topic to publish joint angles for the right arm controller
+            skeletal_model_feed_topic(str): topic to publish image overlayed with skeletal model 
+            data_filter(DataFilter): filter implementation
+            retargeting(HumanToPepperRetargeting): implementation of retargeting landmarks to angles
+        """
 
         self.intrinsics = camera_intrinsics
         self.image_width = image_width
@@ -120,6 +135,14 @@ class SkeletalModelEstimation:
  
 
     def image_callback(self, image_data, depth_data):
+        """
+        Callback for synchronized image data. Processes the images to output Pepper angles.
+
+        Args:
+            image_data(sensor_msgs.Image): ROS Image message with visual image
+            depth_data(sensor_msgs.Image): ROS Image message with depth image
+        """
+
         # Acquire the lock to ensure only one callback is processed at a time
         if not self.lock.acquire(blocking=False):
             rospy.logwarn("Frame skipped due to lock contention")
@@ -145,7 +168,6 @@ class SkeletalModelEstimation:
                 rospy.loginfo("Landmarks could not be calculated")
                 return
 
-
             if angles is not None:
                 filtered_angles = self.filter.get_filtered_angles(angles)
                 print(filtered_angles)
@@ -167,7 +189,18 @@ class SkeletalModelEstimation:
             # Release the lock when done processing
             self.lock.release()
 
+
     def get_landmarks(self, bgr_image):
+        """
+        Get landmarks from the visual image with MediaPipe.
+
+        Args:
+            bgr_image(np.array): Visual image 
+
+        Returns:
+            landmarks(object): list of landmarks
+        """
+
         # Convert to RGB for MediaPipe processing
         rgb_image = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2RGB)
         rgb_image.flags.writeable = False
@@ -187,6 +220,17 @@ class SkeletalModelEstimation:
             return None
         
     def get_3d_coordinates(self,landmark, depth_image):
+        """
+        Concatenate landmark and depth yielding 3D landmarks. 
+
+        Args:
+            landmark(object): single landmark on the human upper body detected with MediaPipe
+            depth_image(np.array): depth image
+
+        Returns:
+            coords(np.array): 3D cartesian coordinates in the camera frame
+        """
+
         # Get the 2D pixel coordinates
         x = int(landmark.x * self.image_width)
         y = int(landmark.y * self.image_height)
@@ -211,11 +255,11 @@ class SkeletalModelEstimation:
         Calculate the shoulder pitch, shoulder roll, elbow roll, elbow yaw, and wrist yaw angles for both arms.
 
         Args:
-            joints (dict): Dictionary of joint 3D coordinates.
-            Expects keys 'Neck', 'LShoulder', 'LElbow', 'LWrist', 'RShoulder', 'RElbow', 'RWrist', 'MidHip'.
+            landmark(object): container of landmarks on the human upper body detected with MediaPipe
+            depth_image(np.array): depth image
 
         Returns:
-            dict: A dictionary containing angles for both arms (left and right).
+            angles(np.array): retargeted Pepper angles
         """
 
         LShoulder = self.get_3d_coordinates(landmarks[mp.solutions.pose.PoseLandmark.LEFT_SHOULDER.value], depth_image)
@@ -275,10 +319,10 @@ class SkeletalModelEstimation:
 
     def publish_angles(self, angles):
             """
-            Publish joint angles for left and right arms using pre-initialized JointTrajectory messages.
+            Publish joint angles for left and right arms using pre-initialized ROS JointTrajectory messages.
             
             Args:
-            - angles (np.ndarray): A 1D NumPy array of joint angles.
+                angles (np.ndarray): A 1D NumPy array of Pepper joint angles.
             """
             # Indices for left and right arm joints in the angles array
             left_arm_indices = [0, 1, 2, 3, 4]  # Indices for LShoulderPitch, LShoulderRoll, LElbowRoll, LElbowYaw, LWristYaw
@@ -300,10 +344,9 @@ class SkeletalModelEstimation:
             self.right_arm_command_pub.publish(self.right_traj_msg)
 
 
-   
-
     def run(self):
         """Main loop to continuously display the image feed."""
+
         while not rospy.is_shutdown() and not self.shutdown_flag:
             # Safely retrieve the latest image without holding the lock too long
             with self.image_lock:

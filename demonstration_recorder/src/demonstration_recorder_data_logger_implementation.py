@@ -16,8 +16,8 @@ This program comes with ABSOLUTELY NO WARRANTY.
 
 import rospy
 import rospkg
-
 import os
+import re  
 from demonstration_recorder_states_and_events_implementation import DataLoggerStates, DataLoggerCommands
 import subprocess
 
@@ -29,8 +29,8 @@ class PepperROS1Logger():
         Args:
             data_to_topic_map(dict): Dictionary that maps types of data to the topics they can be recorded from
             data_dir(str): Base directory where the demonstration data should be stored
-            demo_name(str): Directory where set of demonstrations should be stored (for one movement for example)
-            publisher(rospy.Publisher): publisher to send messages to the GUI directly
+            demo_name(str): Directory where set of demonstrations should be stored
+            publisher(rospy.Publisher): Publisher to send messages to the GUI directly
         """
 
         rospy.loginfo("DataLogger initialized")
@@ -44,48 +44,73 @@ class PepperROS1Logger():
         unit_test = rospy.get_param('~unit_test', False)
         rospy.loginfo(f"Performing Unit Test: {unit_test}")
 
+        # Define the demo directory path
         if unit_test:
-            # Use a single-shot timer to delay test execution
             self.demo_dir_path = os.path.join(data_dir, "unit_test")
         else:
             self.demo_dir_path = os.path.join(data_dir, demo_name)
         
         if not os.path.exists(self.demo_dir_path):
             os.makedirs(self.demo_dir_path)
-        self.demo_counter = 1  # Counter for demo directories
 
-        # Get the path to the package
-        package_path = rospkg.RosPack().get_path('programming_by_demonstration')
+        # Find the next available demo number
+        self.demo_counter = self.find_next_demo_number()
 
-        # Construct the path to the config file relative to the package path
-        self.rosbag_script_path = os.path.join(package_path, 'demonstration_recorder', 'src', 'demonstration_recorder_rosbag_recorder_implementation.py')
-
-        self.record_processes = None  
-        self.replay_processes = None
+        self.record_process = None  
+        self.replay_process = None
         self.replay_monitor_timer = None
-       
-        self.gui_publisher=publisher
+        self.gui_publisher = publisher
+
+
+    def find_next_demo_number(self):
+        """
+        Finds the next available demo number in the demo directory.
+        Scans the folder for existing demos named demo*.bag and determines the next number.
+
+        Returns:
+            int: Next available demo number.
+        """
+        existing_files = os.listdir(self.demo_dir_path)
+
+        if len(existing_files) == 0:
+            return 1
+        else:
+            max_demo_number = 0
+
+            # Regex to match demo files (e.g., demo1.bag, demo2.bag)
+            demo_file_pattern = re.compile(r"demo(\d+)\.bag")
+            for file in existing_files:
+                match = demo_file_pattern.match(file)
+                if match:
+                    demo_number = int(match.group(1))
+                    if demo_number > max_demo_number:
+                        max_demo_number = demo_number
+            
+            # Return the next available demo number
+            return max_demo_number + 1
 
 
     def start_logging(self):
-        """ Start recording the ROS bag in a separate process for each topic."""
+        """Start recording the ROS bag in a single process for all specified topics using rosbag record."""
 
         if self.data_logger_state == DataLoggerStates.IDLE:
+            if len(self.topics_list) != 0:
+                # Create a new bag file name based on demo counter
+                bag_file = os.path.join(self.demo_dir_path, f"demo{self.demo_counter}.bag")
+                rospy.loginfo(f"Recording topics: {self.topics_list}")
 
-            self.record_processes = []  # Store references to processes for each topic
+                # Build the rosbag record command for all topics
+                rosbag_command = ["rosbag", "record", "-O", bag_file] + self.topics_list
 
-            # Start a recording process for each topic
-            if len(self.topics_list) !=0:
-                for topic in self.topics_list:
-                    bag_file = os.path.join(self.demo_dir_path, f"demo_{self.demo_counter}{topic.replace('/', '_')}.bag")
+                # Start the recording process
+                self.record_process = subprocess.Popen(rosbag_command)
+                rospy.loginfo(f"Started recording topics in {bag_file}")
 
-                    # Start recording by calling the external script for each topic
-                    process = subprocess.Popen(['python3', self.rosbag_script_path, bag_file, topic])
-                    self.record_processes.append(process)  # Track the process for later management
-
-                    rospy.loginfo(f"Started recording {topic} in {bag_file}")
-
-            rospy.loginfo("Started recording all specified topics")
+                # Update state and increment demo counter
+                self.data_logger_state = DataLoggerStates.RECORDING
+                
+            else:
+                rospy.logwarn("No topics specified to record.")
         else:
             rospy.loginfo("Data Logger is busy with recording or replaying.")
 
@@ -98,15 +123,17 @@ class PepperROS1Logger():
 
         if self.data_logger_state == DataLoggerStates.RECORDING:
             rospy.loginfo("Stopping the recording process...")
-            for process in self.record_processes:
-                process.terminate()  # Terminate the process
-                process.wait()  # Wait for the process to fully exit
+            if self.record_process:
+                self.record_process.terminate()  # Terminate the process
+                self.record_process.wait()  # Wait for the process to fully exit
+                self.record_process = None  # Clear the reference
 
-            self.record_processes = [] # Clear the reference to the process
+            self.gui_publisher.publish(os.path.join(self.demo_dir_path, f"demo{self.demo_counter}.bag"))
+            self.demo_counter += 1
+            self.data_logger_state = DataLoggerStates.IDLE
             rospy.loginfo("Stopped recording successfully")
         else:
             rospy.loginfo("No recording in progress to stop.")
-
 
     def start_replay(self, file_path):
         """ Start replaying a ROS bag file in a separate process."""
@@ -165,7 +192,23 @@ class PepperROS1Logger():
         rospy.loginfo(f"Set topics to record: {topic_list}")
         return topic_list
 
-        
+
+    def set_topics(self, data_list):
+        """ Set the topics which ought to be recorded by extracting them from the data_to_topic_map. """
+
+        topic_list = []
+        for data in data_list:
+            if data in self.data_to_topic_map:
+                topics = self.data_to_topic_map[data]
+                if isinstance(topics, list):
+                    topic_list.extend(topics)
+                else:
+                    topic_list.append(topics)
+            else:
+                rospy.logwarn(f"Specified data not available in config: {data}")
+        rospy.loginfo(f"Set topics to record: {topic_list}")
+        return topic_list
+
     def handle_event(self, event):
         """
         Data logging event handler.
@@ -215,12 +258,8 @@ class PepperROS1Logger():
             rospy.logwarn("Received unknown command.")
             information = "Data logger received unknown command."
         return information
-    
 
     def cleanup(self):
         """ Destructor to ensure any resources are properly released."""
-
         self.stop_logging()
         rospy.loginfo("Exited Data Logger")
-
-
