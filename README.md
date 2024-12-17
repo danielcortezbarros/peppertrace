@@ -65,19 +65,22 @@ Find the Intel RealSense and note the bus id for the following
     usbipd bind --busid 4-4
     usbipd attach --wsl --busid 4-4
 
-**Step 3**:  In the commands below, replace \$DISPLAY with your PC's IP address.
+**Step 3**:  In the commands below, replace \$DISPLAY with your PC's IP address. You can find it by running ```ipconfig``` in the Windows terminal and looking under the WLAN entry.
     The following command is only used the first time executing the
     tool. If you have an Nvidia GPU on your machine run:
 
-    docker run --name peppertrace-container --privileged --device=/dev/bus/usb/ --runtime=nvidia --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -it danielcortezbarros/peppertrace:latest
+    docker run --name peppertrace-container --privileged --device=/dev/bus/usb/ --runtime=nvidia --gpus all -e DISPLAY=$DISPLAY:0.0 -v /tmp/.X11-unix:/tmp/.X11-unix -it danielcortezbarros/peppertrace:latest
 
 Otherwise run:
 
-    docker run --name peppertrace-container --privileged --device=/dev/bus/usb/ -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -it  danielcortezbarros/peppertrace:latest
+    docker run --name peppertrace-container --privileged --device=/dev/bus/usb/ -e DISPLAY=$DISPLAY:0.0 -v /tmp/.X11-unix:/tmp/.X11-unix -it  danielcortezbarros/peppertrace:latest
 
-From the second time onwards, simply run the existing container:
+From the second time onwards, simply run the existing container and start an interactive session:
 
     docker start peppertrace-container
+    docker run exec -it peppertrace-container bin/bash
+
+If you change locations, you need to update the $DISPLAY variable with the new IP address by running ```export DISPLAY=$DISPLAY:0.0```. Replace $DISPLAY with the current IP address. 
 
 
 **Step 4**: Pull the latest changes from the Github repository:
