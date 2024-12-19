@@ -76,7 +76,7 @@ Otherwise run:
 From the second time onwards, simply run the existing container and start an interactive session:
 
     docker start peppertrace-container
-    docker run exec -it peppertrace-container bin/bash
+    docker exec -it peppertrace-container bin/bash
 
 If you change locations, you need to update the $DISPLAY variable with the new IP address by running ```echo 'export DISPLAY=$DISPLAY:0.0' >> ~/.bashrc```. Replace $DISPLAY with the current IP address. 
 
