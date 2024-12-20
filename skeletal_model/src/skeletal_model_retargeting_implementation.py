@@ -12,16 +12,16 @@
     Website: www.cssr4africa.org
 
 This program comes with ABSOLUTELY NO WARRANTY.
+
+Code used from https://github.com/FraPorta/pepper_openpose_teleoperation.
+
 """
 
 import sys
-
 import numpy as np
 import math
 
-## class KeypointsToAngles
-#
-# This class contains methods to receive 3D keypoints and calculate skeleton joint angles  
+
 class HumanToPepperRetargeting:
     '''
     # Body parts associated to their index
@@ -36,20 +36,14 @@ class HumanToPepperRetargeting:
                     '8':  "MidHip"}
     '''
 
-    ##  method __init__
-    #
-    #   Initialization method 
+
     def __init__(self):
         pass
 
-    #   calculate 3D vector from two points ( vector = P2 - P1 )
     def vector_from_points(self, P1, P2):
         vector = [P2[0] - P1[0], P2[1] - P1[1], P2[2] - P1[2]]
         return vector
 
-    ##  function obtain_LShoulderPitchRoll_angles
-    # 
-    #   Calculate left shoulder pitch and roll angles
     def obtain_LShoulderPitchRoll_angles(self, P1, P5, P6, P8):
         # Construct 3D vectors (bones) from points
         v_1_5 = self.vector_from_points(P1, P5)
@@ -105,9 +99,7 @@ class HumanToPepperRetargeting:
         # Return LShoulder angles
         return LShoulderPitch, LShoulderRoll
     
-    ##  function obtain_RShoulderPitchRoll_angles
-    # 
-    #   Calculate right shoulder pitch and roll angles
+
     def obtain_RShoulderPitchRoll_angle(self, P1, P2, P3, P8):
         # Construct 3D vectors (bones) from points
         v_2_3 = self.vector_from_points(P2, P3)
@@ -159,9 +151,6 @@ class HumanToPepperRetargeting:
         # Return RShoulder angles
         return RShoulderPitch, RShoulderRoll
 
-    ##  function obtain_LElbowYawRoll_angle
-    #   
-    #   Calculate left elbow yaw and roll angles
     def obtain_LElbowYawRoll_angle(self, P1, P5, P6, P7):
         # Construct 3D vectors (bones) from points
         v_6_7 = self.vector_from_points(P6, P7)
@@ -221,10 +210,7 @@ class HumanToPepperRetargeting:
         # Return LElbow angles
         return LElbowYaw, LElbowRoll
 
- 
-    ##  function obtain_RElbowYawRoll_angle
-    # 
-    #   Calculate right elbow yaw and roll angles
+
     def obtain_RElbowYawRoll_angle(self, P1, P2, P3, P4):
         # Construct 3D vectors (bones) from points
         v_3_4 = self.vector_from_points(P3, P4)
@@ -288,9 +274,7 @@ class HumanToPepperRetargeting:
         # Return RElbow angles
         return RElbowYaw, RElbowRoll
     
-    ##  function obtain_HipPitch_angles
-    # 
-    #   Calculate right hip pitch angle
+ 
     def obtain_HipPitch_angles(self, P0_curr, P8_curr):
         # Calculate vector
         v_0_8_curr = self.vector_from_points(P0_curr, P8_curr)
@@ -330,9 +314,6 @@ class HumanToPepperRetargeting:
         return HipPitch
     
     
-    ##  function invert_right_left
-    #
-    #   Invert left and right arm
     def invert_right_left(self, wp_dict):
         temp_dict = {}
 
@@ -360,9 +341,6 @@ class HumanToPepperRetargeting:
         return temp_dict
 
 
-    ##  method get_angles
-    #
-    #   Get angles from socket and calculate joint angles
     def get_angles(self, wp_dict):
         try:
 

@@ -17,11 +17,5 @@
         ]
     ],
     "image_width" : 1280,
-    "image_height" : 720,
-    "color_image_topic":"/camera/color/image_raw",
-    "depth_image_topic":"/camera/aligned_depth_to_color/image_raw",
-    "left_arm_command_topic": "/pepper_dcm/LeftArm_controller/command",
-    "right_arm_command_topic": "/pepper_dcm/RightArm_controller/command",
-    "gui_commands_topic": "/gui/commands",
-    "skeletal_model_feed_topic": "/mediapipe/image_feed"
+    "image_height" : 720
 }

@@ -1,7 +1,23 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+""" demonstration_recorder_replay_implementation.py Implements control logic for data logging 
+
+    Author:Daniel Barros
+    Date: November 21, 2024
+    Version: v1.0
+
+    Copyright (C) 2023 CSSR4Africa Consortium
+
+    This project is funded by the African Engineering and Technology Network (Afretec
+    Inclusive Digital Transformation Research Grant Programme.
+    
+    Website: www.cssr4africa.org
+
+This program comes with ABSOLUTELY NO WARRANTY.
+"""
 
 import rospy
 import rosbag
+import subprocess
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 def combine_and_publish_trajectory(bag_file_path, input_topic, output_topic, shift_time=2.0):
@@ -44,11 +60,26 @@ def combine_and_publish_trajectory(bag_file_path, input_topic, output_topic, shi
         rospy.loginfo(f"Published combined trajectory with {len(combined_trajectory.points)} points.")
         rospy.loginfo(f"Trajectory starts at: {combined_trajectory.header.stamp.to_sec()}")
 
-if __name__ == "__main__":
+
+def main():
     rospy.init_node("trajectory_combiner", anonymous=True)
 
-    # Bag file path (update this to your actual bag file path)
-    bag_file_path = "/root/workspace/demo_data/banana/demo2.bag"
+    # Get the bag file path from command-line arguments
+    import sys
+    if len(sys.argv) < 2:
+        rospy.logerr("Bag file path is required as an argument.")
+        sys.exit(1)
+
+    bag_file_path = sys.argv[1]
+
+    if "unit_test" in bag_file_path:
+        print("##############################################################")
+        self.replay_process = subprocess.Popen([
+            'rosbag', 
+            'play',
+            bag_file_path
+        ])
+        return
 
     # Input topic and output topic
     input_topic = "/pepper_dcm/LeftArm_controller/command"
@@ -58,3 +89,6 @@ if __name__ == "__main__":
         combine_and_publish_trajectory(bag_file_path, input_topic, output_topic, shift_time=2.0)
     except rospy.ROSInterruptException:
         rospy.loginfo("Trajectory combiner interrupted.")
+
+if __name__ == "__main__":
+    main()

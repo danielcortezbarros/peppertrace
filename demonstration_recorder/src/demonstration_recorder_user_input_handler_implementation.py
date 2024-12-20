@@ -1,4 +1,4 @@
-""" user_input_handler_implementation.py Contains implementations of input handlers for different devices
+""" demonstration_recorder_user_input_handler_implementation.py Contains implementations of input handlers for different devices
 
     Author:Daniel Barros
     Date: November 21, 2024

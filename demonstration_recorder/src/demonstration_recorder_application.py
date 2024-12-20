@@ -83,21 +83,26 @@ def main():
 
     # Construct the path to the config file relative to the package path
     config_file_path = os.path.join(package_path, 'demonstration_recorder', 'config', 'demonstration_recorder_configuration.json')
+    topics_file_path = os.path.join(package_path, 'demonstration_recorder', 'data', 'demonstration_recorder_topics.json')
 
     # Load the JSON config file
     with open(config_file_path, 'r') as config_file:
         config = json.load(config_file)
 
+    # Load the JSON data file
+    with open(topics_file_path, 'r') as topics_file:
+        topics = json.load(topics_file)
+
     print("Loaded config:", config)
 
-    gui_publisher=rospy.Publisher(config["gui_system_logs_topic"], String, queue_size=10)
+    gui_publisher=rospy.Publisher(topics["gui_system_logs_topic"], String, queue_size=10)
     
 
     # Initialize subcomponents
     robot_control_handler = PepperRobotEventHandler(publisher=gui_publisher)
     information_display = GuiInfoDisplay(publisher=gui_publisher)
-    user_input = GuiInputHandler(gui_commands_topic=config["gui_commands_topic"])
-    data_logger = PepperROS1Logger(data_to_topic_map=config["data_logger"]["data_to_topic_map"],
+    user_input = GuiInputHandler(gui_commands_topic=topics["gui_commands_topic"])
+    data_logger = PepperROS1Logger(data_to_topic_map=topics["data_to_topic_map"],
                                    data_dir=config["data_logger"]["data_dir"],
                                    demo_name=config["data_logger"]["demo_name"],
                                    publisher=gui_publisher

@@ -1,15 +1,6 @@
 {
     "data_logger": {
-        "data_to_topic_map": {
-            "estimated_angles": ["/pepper_dcm/LeftArm_controller/command", "/pepper_dcm/RightArm_controller/command"], 
-            "measured_angles":"/joint_states",
-            "unit_test":"/demonstration_recorder/unit_test"
-
-        },
         "data_dir":"/root/workspace/demo_data",
         "demo_name":"banana"
-    },
-    "gui_system_logs_topic": "/gui/system_logs",
-    "gui_commands_topic": "/gui/commands"
-
+    }
 }

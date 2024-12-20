@@ -1,4 +1,4 @@
-""" demo_recorder_implementation.py Implements orchestrator of the demonstration system
+""" demonstration_recorder_demo_recorder_implementation.py Implements orchestrator of the demonstration system
 
     Author:Daniel Barros
     Date: November 21, 2024

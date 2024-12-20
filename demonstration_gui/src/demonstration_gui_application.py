@@ -105,17 +105,22 @@ def main():
     # Load configuration
     rospack = rospkg.RosPack()
     package_path = rospack.get_path('programming_by_demonstration')
+
     config_file_path = os.path.join(package_path, 'demonstration_gui', 'config', 'demonstration_gui_configuration.json')
     with open(config_file_path, 'r') as config_file:
         config = json.load(config_file)
+
+    topics_file_path = os.path.join(package_path, 'demonstration_gui', 'data', 'demonstration_gui_topics.json')
+    with open(topics_file_path, 'r') as topics_file:
+        topics = json.load(topics_file)
 
     app = QtWidgets.QApplication(sys.argv)
 
     # Instantiate the GUI
     main_window = MainWindow(
-        gui_commands_topic=config["gui_commands_topic"],
-        gui_system_logs_topic=config["gui_system_logs_topic"],
-        skeletal_model_feed_topic=config["skeletal_model_feed_topic"]
+        gui_commands_topic=topics["gui_commands_topic"],
+        gui_system_logs_topic=topics["gui_system_logs_topic"],
+        skeletal_model_feed_topic=topics["skeletal_model_feed_topic"]
     )
     main_window.show()
 

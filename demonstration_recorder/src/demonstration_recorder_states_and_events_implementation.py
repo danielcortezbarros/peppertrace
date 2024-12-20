@@ -1,4 +1,4 @@
-""" states_and_events_implementation.py Definition of enums for more readability in the components of demonstration recorder
+""" demonstration_recorder_states_and_events_implementation.py Definition of enums for more readability in the components of demonstration recorder
 
     Author:Daniel Barros
     Date: November 21, 2024

@@ -3,7 +3,7 @@
   <version>0.1.0</version>
   <description>Package for programming from demonstration</description>
 
-  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <maintainer email="dbarros@andrew.cmu.edu">Daniel Barros</maintainer>
   <license>MIT</license>
 
   <!-- Ensure catkin is listed as a build tool -->

@@ -1,4 +1,4 @@
-""" information_display_implementation.py Sends information via ROS topic to be displayed in the user interface.
+""" demonstration_recorder_information_display_implementation.py Sends information via ROS topic to be displayed in the user interface.
 
     Author:Daniel Barros
     Date: November 21, 2024

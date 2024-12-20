@@ -1,4 +1,4 @@
-""" data_logger_implementation.py Implements control logic for data logging 
+""" demonstration_recorder_data_logger_implementation.py Implements control logic for data logging 
 
     Author:Daniel Barros
     Date: November 21, 2024
@@ -141,7 +141,12 @@ class PepperROS1Logger():
         if self.data_logger_state == DataLoggerStates.IDLE:
             if os.path.exists(file_path):
                 rospy.loginfo(f"Starting replay of {file_path}")
-                self.replay_process = subprocess.Popen(['rosbag', 'play', file_path])
+                self.replay_process = subprocess.Popen([
+                    'rosrun', 
+                    'programming_by_demonstration', 
+                    'demonstration_recorder_replay_implementation.py', 
+                    file_path
+                ])
                 self.data_logger_state = DataLoggerStates.REPLAYING
                 # Monitor the process asynchronously
                 self.replay_monitor_timer = rospy.Timer(rospy.Duration(1.0), self._monitor_replay_process)

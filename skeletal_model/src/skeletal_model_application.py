@@ -77,10 +77,15 @@ def main():
 
     # Construct the path to the config file relative to the package path
     config_file_path = os.path.join(package_path, 'skeletal_model', 'config', 'skeletal_model_configuration.json')
+    topics_file_path = os.path.join(package_path, 'skeletal_model', 'data', 'skeletal_model_topics.json')
 
     # Load the JSON config file
     with open(config_file_path, 'r') as config_file:
         config = json.load(config_file)
+
+    # Load the JSON data file
+    with open(topics_file_path, 'r') as topics_file:
+        topics = json.load(topics_file)
 
     # Check if unit tests should run
     unit_test = rospy.get_param('~unit_test', False)
@@ -91,18 +96,18 @@ def main():
     else:
         window_size=5
 
-    data_filter = DataFilter(window_size=window_size, filter_type="mean", gui_commands_topic=config["gui_commands_topic"])
+    data_filter = DataFilter(window_size=window_size, filter_type="mean", gui_commands_topic=topics["gui_commands_topic"])
     human_to_pepper = HumanToPepperRetargeting()
 
     # Instantiate skeletal model class with config parameters
     skeletal_model = SkeletalModelEstimation(camera_intrinsics=config["camera_intrinsics"],
                                    image_width=config["image_width"],
                                    image_height=config["image_height"],
-                                   color_image_topic=config["color_image_topic"],
-                                   depth_image_topic=config["depth_image_topic"],
-                                   left_arm_command_topic=config["left_arm_command_topic"],
-                                   right_arm_command_topic=config["right_arm_command_topic"], 
-                                   skeletal_model_feed_topic=config["skeletal_model_feed_topic"],
+                                   color_image_topic=topics["color_image_topic"],
+                                   depth_image_topic=topics["depth_image_topic"],
+                                   left_arm_command_topic=topics["left_arm_command_topic"],
+                                   right_arm_command_topic=topics["right_arm_command_topic"], 
+                                   skeletal_model_feed_topic=topics["skeletal_model_feed_topic"],
                                    data_filter = data_filter,
                                    retargeting = human_to_pepper
                                    )

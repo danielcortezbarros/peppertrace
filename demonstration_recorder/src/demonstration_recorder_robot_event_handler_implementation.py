@@ -1,4 +1,4 @@
-""" robot_event_handler_implementation.py Implements control logic for robot events
+""" demonstration_recorder_robot_event_handler_implementation.py Implements control logic for robot events
 
     Author:Daniel Barros
     Date: November 21, 2024
