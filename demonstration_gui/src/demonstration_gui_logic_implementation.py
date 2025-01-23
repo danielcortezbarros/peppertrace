@@ -16,7 +16,7 @@ This program comes with ABSOLUTELY NO WARRANTY.
 
 from PyQt5 import QtWidgets, QtGui, QtCore
 from PyQt5.QtGui import QImage, QPixmap
-from demonstration_gui_elements_implementation import Ui_MainWindow
+from demonstration_gui_elements import Ui_MainWindow
 import json
 from demonstration_gui_ros_interface_implementation import RosThread
 import rospkg
@@ -69,13 +69,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.stopRecordButton.clicked.connect(lambda: self.send_command('STOP_RECORD'))
         self.ui.startReplayButton.clicked.connect(lambda: self.send_command(f'START_REPLAY,{self.ui.replayLineEdit.text()}'))
         self.ui.stopReplayButton.clicked.connect(lambda: self.send_command('STOP_REPLAY'))
-        self.ui.browseButton.clicked.connect(self.open_file_dialog)
+        # self.ui.browseButton.clicked.connect(self.open_file_dialog)
         self.ui.clearLogsButton.clicked.connect(lambda: self.clear_systems_log_box())
         self.ui.biomoRadio.toggled.connect(self.update_filter)
         self.ui.butterworthRadio.toggled.connect(self.update_filter)
         self.ui.estimatedAnglesCheck.stateChanged.connect(self.update_data_to_record)
         self.ui.measuredAnglesCheck.stateChanged.connect(self.update_data_to_record)
-        self.ui.imagesCheck.stateChanged.connect(self.update_data_to_record)
+
+        self.ui.pepperLogo.setScaledContents(True)
+        self.ui.connectedIcon.setScaledContents(True)
+        self.ui.recordIcon.setScaledContents(True)
+        self.ui.demonstrateIcon.setScaledContents(True)
+       # self.ui.imagesCheck.stateChanged.connect(self.update_data_to_record)
 
     def send_command(self, cmd):
         """
