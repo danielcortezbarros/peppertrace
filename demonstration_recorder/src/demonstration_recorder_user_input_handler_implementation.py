@@ -76,16 +76,17 @@ class GuiInputHandler:
             self.post_event(EventType.ROBOT_CONTROL, RobotCommands.START_DEMONSTRATE)
         elif command == "STOP_DEMONSTRATE":
             self.post_event(EventType.ROBOT_CONTROL, RobotCommands.STOP_DEMONSTRATE)
-        elif command == "START_RECORD":
-            self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START_RECORD)
+        elif command.startswith("START_RECORD"):
+            _, demo_name = command.split(",")
+            self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START_RECORD, args={'demo_name':demo_name})
         elif command == "STOP_RECORD":
             self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.STOP_RECORD)
         elif command.startswith("RECORD"):
             topics = eval(command[len("RECORD"):])  # Convert the string to a list
             self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SET_TOPICS, args={"topics":topics})
         elif command.startswith("START_REPLAY"):
-            _, file_path = command.split(",")
-            self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START_REPLAY, args={'file_path': file_path})
+            _, demo_name = command.split(",")
+            self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.START_REPLAY, args={'demo_name': demo_name})
         elif command == "STOP_REPLAY":
             self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.STOP_REPLAY)
         elif command.startswith("FILTER"):

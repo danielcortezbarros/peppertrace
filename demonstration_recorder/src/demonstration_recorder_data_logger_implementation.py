@@ -93,7 +93,8 @@ class PepperROS1Logger():
                 rospy.loginfo(f"Recording topics: {self.topics_list}")
 
                 # Build the rosbag record command
-                rosbag_command = ["rosbag", "record", "-O", bag_file] + self.topics_list
+                # rosbag_command = ["rosbag", "record", "-O", bag_file] + self.topics_list
+                rosbag_command = ["rosbag", "record", "-O", bag_file] + ["/test_topic"]
 
                 # Start the recording process
                 self.record_process = subprocess.Popen(rosbag_command)
@@ -218,8 +219,10 @@ class PepperROS1Logger():
             if self.data_logger_state == DataLoggerStates.RECORDING:
                 information = "Data logger is already recording."
             else:
+                demo_name = event.args["demo_name"]
+                self.update_demo_name(demo_name)
                 self.start_logging()
-                information = "[INFO] RECORDING successfully."
+                information = f"[INFO] RECORDING {demo_name} successfully."
                 self.data_logger_state = DataLoggerStates.RECORDING
 
         elif event.command == DataLoggerCommands.STOP_RECORD:
@@ -231,9 +234,13 @@ class PepperROS1Logger():
                 information = "Data logger is already stopped"
 
         elif event.command == DataLoggerCommands.START_REPLAY:
-            file_path = event.args.get("file_path")
+            # Construct the full path
+            demo_name = os.path.join(event.args.get("demo_name"))
+            base_demo_name = re.sub(r'\d+$', '', demo_name) #remove digits
+            file_path = os.path.join(self.data_dir, base_demo_name, f"{demo_name}.bag")
+            
             if not file_path or not os.path.exists(file_path):
-                information = "[WARNING] Cannot replay: path does not exist."
+                information = f"[WARNING] Cannot replay: {file_path} does not exist."
             else:
                 self.start_replay(file_path)
                 information = f"Started replaying recording: {file_path}"
@@ -250,15 +257,19 @@ class PepperROS1Logger():
             topics = event.args["topics"]
             self.topics_list=self.set_topics(topics)
             information = f'Set data to record: {",".join(topics)} '
+            
 
         else:
             rospy.logwarn("Received unknown command.")
             information = "Data logger received unknown command."
         return information
 
-    def update_demo_name(self):
+    def update_demo_name(self, demo_name):
+        #folder structure is data_dir -> demo_dir_path -> demo_name1.bag
         self.demo_name=demo_name
         self.demo_dir_path = os.path.join(self.data_dir, self.demo_name)
+        if not os.path.exists(self.demo_dir_path):
+            os.makedirs(self.demo_dir_path)
 
     def cleanup(self):
         """ Destructor to ensure any resources are properly released."""

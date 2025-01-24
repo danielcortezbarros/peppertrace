@@ -24,6 +24,7 @@ import os
 import numpy as np
 import cv2
 import rospy
+import time
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -41,6 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.connected = False
         self.demonstrate_running = False
         self.demo_data_dir = demo_data_dir
 
@@ -64,7 +66,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def connect_gui_buttons(self):
         """Connect GUI buttons to their callback functions."""
 
-        self.ui.connectButton.clicked.connect(lambda: self.send_command(f'CONNECT,{self.ui.robotIP.text()},{self.ui.port.text()}'))
+        self.ui.connectButton.clicked.connect(lambda: self.send_command('CONNECT'))
         self.ui.startDemonstrateButton.clicked.connect(lambda: self.send_command('START_DEMONSTRATE'))
         self.ui.stopDemonstrateButton.clicked.connect(lambda: self.send_command('STOP_DEMONSTRATE'))
         self.ui.startRecordButton.clicked.connect(lambda: self.send_command('START_RECORD'))
@@ -93,11 +95,27 @@ class MainWindow(QtWidgets.QMainWindow):
         Args:
             cmd(str): command to send to the system. 
         """
+        if cmd == 'CONNECT':
+            cmd= cmd + ',{},{}'.format(self.ui.robotIP.text(), self.ui.port.text())
+            self.ros_thread.publish_signal.emit(cmd)
 
-        if cmd == 'START_RECORD' and self.demonstrate_running == False:
-            self.display_info("[WARNING] Please start demonstrate before recording")
-            return
-        elif cmd.startswith('START_REPLAY'):
+        if cmd == 'START_DEMONSTRATE':
+            if self.connected == False:
+                self.display_info("[WARNING] Please connect to the robot before demonstrating.")  
+            else:
+                self.ros_thread.publish_signal.emit(cmd)
+
+        if cmd =='START_RECORD':
+            if self.ui.demoName.text() == '':
+                self.display_info("[WARNING] Please set the Demo Name before recording.")    
+                return
+            # elif self.demonstrate_running == False:
+            #     self.display_info("[WARNING] Please start demonstrate before recording.")
+            else:
+                cmd= cmd + ',{}'.format(self.ui.demoName.text())
+                self.ros_thread.publish_signal.emit(cmd)
+                
+        elif cmd =='START_REPLAY':
             if self.demonstrate_running == True:
                 self.display_info("[WARNING] Please stop demonstrating before replaying motion.")
                 return
@@ -108,7 +126,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.display_info("[WARNING] Please select a demo before starting replay.")
                     return
                 else:
-                    cmd= cmd + ',{{{}}}'.format(selected_demo)
+                    cmd= cmd + ',{}'.format(selected_demo)
                     self.ros_thread.publish_signal.emit(cmd)
         else:
             self.ros_thread.publish_signal.emit(cmd)
@@ -137,7 +155,7 @@ class MainWindow(QtWidgets.QMainWindow):
         demo_names = []
         for root, _, files in os.walk(self.demo_data_dir):
             for file in files:
-                if file.endswith(".bag"):
+                if file.endswith(".bag") and 'unit_test' not in file:
                     demo_name = os.path.splitext(file)[0]  # Remove the .bag extension
                     demo_names.append(demo_name)
 
@@ -227,9 +245,11 @@ class MainWindow(QtWidgets.QMainWindow):
             # Update GUI images
             if "ERROR" not in info:
                 if "ROBOT CONNECTED" in info:
+                    self.connected = True
                     self.ui.connectButton.setText("DISCONNECT")
                     self.ui.connectedIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
                 elif "ROBOT DISCONNECTED" in info:
+                    self.connected = False
                     self.ui.connectButton.setText("CONNECT")
                     self.ui.connectedIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
                 elif "STOPPED DEMONSTRATING" in info:
@@ -241,6 +261,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.ui.demonstrateIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
                 elif "STOPPED RECORDING" in info:
                     self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
+                    time.sleep(1)
                     self.update_demo_list()
                 elif "RECORDING" in info:
                     self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
