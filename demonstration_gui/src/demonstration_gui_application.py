@@ -83,8 +83,8 @@ def run_unit_tests(main_window):
         "STOP_RECORD": main_window.ui.stopRecordButton,
         "START_REPLAY": main_window.ui.startReplayButton,
         "STOP_REPLAY": main_window.ui.stopReplayButton,
-        "BROWSE": main_window.ui.browseButton,
         "CLEAR": main_window.ui.clearLogsButton,
+        "REFRESH": main_window.ui.refreshDemoListButton
     }
 
     for name, button in buttons_to_test.items():
@@ -120,7 +120,8 @@ def main():
     main_window = MainWindow(
         gui_commands_topic=topics["gui_commands_topic"],
         gui_system_logs_topic=topics["gui_system_logs_topic"],
-        skeletal_model_feed_topic=topics["skeletal_model_feed_topic"]
+        skeletal_model_feed_topic=topics["skeletal_model_feed_topic"],
+        demo_data_dir=config["demo_data_dir"]
     )
     main_window.show()
 

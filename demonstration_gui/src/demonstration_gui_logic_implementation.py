@@ -28,7 +28,7 @@ import rospy
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    def __init__(self, gui_system_logs_topic, gui_commands_topic, skeletal_model_feed_topic, parent=None):
+    def __init__(self, gui_system_logs_topic, gui_commands_topic, skeletal_model_feed_topic, demo_data_dir, parent=None):
         """
         Class constructor. MainWindow implements the logic for handling incoming ROS messages and updating the GUI.
 
@@ -42,6 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.demonstrate_running = False
+        self.demo_data_dir = demo_data_dir
 
         # Get the path to the package
         package_path = rospkg.RosPack().get_path('programming_by_demonstration')
@@ -58,6 +59,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ros_thread.update_gui_signal.connect(self.display_info)
         self.ros_thread.image_signal.connect(self.display_image_feed)
         self.connect_gui_buttons()
+        self.update_demo_list()
 
     def connect_gui_buttons(self):
         """Connect GUI buttons to their callback functions."""
@@ -67,10 +69,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.stopDemonstrateButton.clicked.connect(lambda: self.send_command('STOP_DEMONSTRATE'))
         self.ui.startRecordButton.clicked.connect(lambda: self.send_command('START_RECORD'))
         self.ui.stopRecordButton.clicked.connect(lambda: self.send_command('STOP_RECORD'))
-        self.ui.startReplayButton.clicked.connect(lambda: self.send_command(f'START_REPLAY,{self.ui.replayLineEdit.text()}'))
+        self.ui.startReplayButton.clicked.connect(lambda: self.send_command('START_REPLAY'))
         self.ui.stopReplayButton.clicked.connect(lambda: self.send_command('STOP_REPLAY'))
         # self.ui.browseButton.clicked.connect(self.open_file_dialog)
-        self.ui.clearLogsButton.clicked.connect(lambda: self.clear_systems_log_box())
+        self.ui.clearLogsButton.clicked.connect(self.clear_systems_log_box)
+        self.ui.refreshDemoListButton.clicked.connect(self.update_demo_list)
         self.ui.biomoRadio.toggled.connect(self.update_filter)
         self.ui.butterworthRadio.toggled.connect(self.update_filter)
         self.ui.estimatedAnglesCheck.stateChanged.connect(self.update_data_to_record)
@@ -98,13 +101,56 @@ class MainWindow(QtWidgets.QMainWindow):
             if self.demonstrate_running == True:
                 self.display_info("[WARNING] Please stop demonstrating before replaying motion.")
                 return
-            elif self.ui.replayLineEdit.text() == "":
-                self.display_info("[WARNING] Please specify a file to replay.")
-                return
             else:
-                self.ros_thread.publish_signal.emit(cmd)
+                selected_demo = self.get_selected_demo()
+                #Check if not None
+                if selected_demo is None:
+                    self.display_info("[WARNING] Please select a demo before starting replay.")
+                    return
+                else:
+                    cmd= cmd + ',{{{}}}'.format(selected_demo)
+                    self.ros_thread.publish_signal.emit(cmd)
         else:
             self.ros_thread.publish_signal.emit(cmd)
+
+    def get_selected_demo(self):
+        """
+        Get the currently selected demo from the QListWidget.
+
+        Returns:
+            str: The selected demo name, or None if nothing is selected.
+        """
+        selected_items = self.ui.demoList.selectedItems()
+        if selected_items:
+            return selected_items[0].text()
+        else:
+            rospy.logwarn("No demo selected.")
+            return None
+
+    def get_demo_list(self):
+        """
+        Gets a list of all demos in the demo_data folder, including subfolders.
+
+        Returns:
+            list: A sorted list of demo names with their file extensions removed.
+        """
+        demo_names = []
+        for root, _, files in os.walk(self.demo_data_dir):
+            for file in files:
+                if file.endswith(".bag"):
+                    demo_name = os.path.splitext(file)[0]  # Remove the .bag extension
+                    demo_names.append(demo_name)
+
+        demo_names.sort()  # Sort the demo names alphabetically
+        rospy.loginfo(f"Found demos: {demo_names}")
+        return demo_names
+
+    def update_demo_list(self):
+        """Updates the QListWidget with the demo names from the demo_data folder."""
+
+        demo_list = self.get_demo_list()
+        self.ui.demoList.clear()
+        self.ui.demoList.addItems(demo_list)
 
     def clear_systems_log_box(self):
         self.ui.systemLogsBox.clear()
@@ -132,8 +178,8 @@ class MainWindow(QtWidgets.QMainWindow):
             data_to_record.append("estimated_angles")
         if self.ui.measuredAnglesCheck.isChecked():
             data_to_record.append("measured_angles")
-        if self.ui.imagesCheck.isChecked():
-            data_to_record.append("images")
+        # if self.ui.imagesCheck.isChecked():
+        #     data_to_record.append("images")
 
         # Construct the command string
         command = f"RECORD{data_to_record}"
@@ -195,6 +241,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.ui.demonstrateIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
                 elif "STOPPED RECORDING" in info:
                     self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
+                    self.update_demo_list()
                 elif "RECORDING" in info:
                     self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
                

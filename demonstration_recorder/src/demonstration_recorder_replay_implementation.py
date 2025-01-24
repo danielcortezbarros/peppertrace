@@ -74,7 +74,7 @@ def main():
 
     if "unit_test" in bag_file_path:
         print("##############################################################")
-        self.replay_process = subprocess.Popen([
+        replay_process = subprocess.Popen([
             'rosbag', 
             'play',
             bag_file_path

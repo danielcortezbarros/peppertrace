@@ -44,17 +44,17 @@ class PepperROS1Logger():
         unit_test = rospy.get_param('~unit_test', False)
         rospy.loginfo(f"Performing Unit Test: {unit_test}")
 
-        # Define the demo directory path
+        # Define the demo directory path, folder structure is data_dir -> demo_dir_path -> demo_name1.bag
+        self.data_dir = data_dir
         if unit_test:
-            self.demo_dir_path = os.path.join(data_dir, "unit_test")
+            self.demo_name="unit_test"
         else:
-            self.demo_dir_path = os.path.join(data_dir, demo_name)
+            self.demo_name=demo_name
+
+        self.demo_dir_path = os.path.join(self.data_dir, self.demo_name)
         
         if not os.path.exists(self.demo_dir_path):
             os.makedirs(self.demo_dir_path)
-
-        # Find the next available demo number
-        self.demo_counter = self.find_next_demo_number()
 
         self.record_process = None  
         self.replay_process = None
@@ -64,42 +64,35 @@ class PepperROS1Logger():
 
     def find_next_demo_number(self):
         """
-        Finds the next available demo number in the demo directory.
-        Scans the folder for existing demos named demo*.bag and determines the next number.
-
+        Finds the next available demo number for the current demo_name in the demo directory.
         Returns:
             int: Next available demo number.
         """
         existing_files = os.listdir(self.demo_dir_path)
+        max_demo_number = 0
 
-        if len(existing_files) == 0:
-            return 1
-        else:
-            max_demo_number = 0
-
-            # Regex to match demo files (e.g., demo1.bag, demo2.bag)
-            demo_file_pattern = re.compile(r"demo(\d+)\.bag")
-            for file in existing_files:
-                match = demo_file_pattern.match(file)
-                if match:
-                    demo_number = int(match.group(1))
-                    if demo_number > max_demo_number:
-                        max_demo_number = demo_number
-            
-            # Return the next available demo number
-            return max_demo_number + 1
+        # Regex to match demo files with the current demo name (e.g., arms_up1.bag)
+        demo_file_pattern = re.compile(fr"{self.demo_name}(\d+)\.bag")
+        for file in existing_files:
+            match = demo_file_pattern.match(file)
+            if match:
+                demo_number = int(match.group(1))
+                if demo_number > max_demo_number:
+                    max_demo_number = demo_number
+        
+        # Return the next available demo number
+        return max_demo_number + 1
 
 
     def start_logging(self):
-        """Start recording the ROS bag in a single process for all specified topics using rosbag record."""
-
+        """Start recording the ROS bag with the demo name and number included in the file name."""
         if self.data_logger_state == DataLoggerStates.IDLE:
             if len(self.topics_list) != 0:
-                # Create a new bag file name based on demo counter
-                bag_file = os.path.join(self.demo_dir_path, f"demo{self.demo_counter}.bag")
+                # Create a new bag file name with demo name and counter
+                bag_file = os.path.join(self.demo_dir_path, f"{self.demo_name}{self.find_next_demo_number()}.bag")
                 rospy.loginfo(f"Recording topics: {self.topics_list}")
 
-                # Build the rosbag record command for all topics
+                # Build the rosbag record command
                 rosbag_command = ["rosbag", "record", "-O", bag_file] + self.topics_list
 
                 # Start the recording process
@@ -128,8 +121,7 @@ class PepperROS1Logger():
                 self.record_process.wait()  # Wait for the process to fully exit
                 self.record_process = None  # Clear the reference
 
-            self.gui_publisher.publish(os.path.join(self.demo_dir_path, f"demo{self.demo_counter}.bag"))
-            self.demo_counter += 1
+            self.gui_publisher.publish(os.path.join(self.demo_dir_path, f"{self.demo_name}{str(self.find_next_demo_number()-1)}.bag"))
             self.data_logger_state = DataLoggerStates.IDLE
             rospy.loginfo("Stopped recording successfully")
         else:
@@ -263,6 +255,10 @@ class PepperROS1Logger():
             rospy.logwarn("Received unknown command.")
             information = "Data logger received unknown command."
         return information
+
+    def update_demo_name(self):
+        self.demo_name=demo_name
+        self.demo_dir_path = os.path.join(self.data_dir, self.demo_name)
 
     def cleanup(self):
         """ Destructor to ensure any resources are properly released."""
