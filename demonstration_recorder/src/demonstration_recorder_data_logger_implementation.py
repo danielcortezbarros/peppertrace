@@ -60,6 +60,7 @@ class PepperROS1Logger():
         self.replay_process = None
         self.replay_monitor_timer = None
         self.gui_publisher = publisher
+        self.filter_type = "biological"
 
 
     def find_next_demo_number(self):
@@ -138,7 +139,8 @@ class PepperROS1Logger():
                     'rosrun', 
                     'programming_by_demonstration', 
                     'demonstration_recorder_replay_implementation.py', 
-                    file_path
+                    file_path,
+                    self.filter_type
                 ])
                 self.data_logger_state = DataLoggerStates.REPLAYING
                 # Monitor the process asynchronously
@@ -257,6 +259,12 @@ class PepperROS1Logger():
             topics = event.args["topics"]
             self.topics_list=self.set_topics(topics)
             information = f'Set data to record: {",".join(topics)} '
+
+        elif event.command == DataLoggerCommands.SET_FILTER:
+            # set topics_list
+            filter_type = event.args["filter_type"]
+            self.filter_type=filter_type
+            information = f'Changed filter to: {",".join(filter_type)} '
             
 
         else:

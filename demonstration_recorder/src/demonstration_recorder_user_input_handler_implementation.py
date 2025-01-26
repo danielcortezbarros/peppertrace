@@ -90,8 +90,8 @@ class GuiInputHandler:
         elif command == "STOP_REPLAY":
             self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.STOP_REPLAY)
         elif command.startswith("FILTER"):
-            # This is handled directly by the filters implementation in the skeletal_model_component
-            pass
+            filter_type=command[6:]
+            self.post_event(EventType.DATA_LOGGING, DataLoggerCommands.SET_FILTER, args={'filter_type': filter_type})
         else:
             rospy.logwarn(f"Unknown GUI command: {command}")
 

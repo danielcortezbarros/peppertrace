@@ -29,6 +29,7 @@ class DataLoggerCommands(Enum):
     START_REPLAY = 2
     STOP_REPLAY = 3
     SET_TOPICS = 4
+    SET_FILTER = 5
 
 
 class DataLoggerStates(Enum):

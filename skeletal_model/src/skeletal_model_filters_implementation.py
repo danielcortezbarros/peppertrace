@@ -21,7 +21,7 @@ from scipy import signal
 
 
 class BiologicalMotionFilter:
-    def __init__(self, window_size: int, regularization: float = 1.0):
+    def __init__(self, window_size: int, regularization: float = 1.0, full_traj:bool = False):
         """
         Initialize the Biological Motion Filter.
 
@@ -32,6 +32,7 @@ class BiologicalMotionFilter:
         self.window_size = window_size
         self.middle_index = self.window_size // 2
         self.lambda_reg = regularization
+        self.full_traj = full_traj
 
         # Construct the finite difference matrix for the third derivative (Q)
         Q = self._construct_Q(window_size)
@@ -70,7 +71,10 @@ class BiologicalMotionFilter:
         filtered_window = np.linalg.solve(self.Q_reg, P)
 
         # Return the middle row of the filtered trajectories
-        return filtered_window[self.middle_index, :]
+        if self.full_traj:
+            return filtered_window
+        else:
+            return filtered_window[self.middle_index, :]
 
 
 class ButterworthFilter:
@@ -120,7 +124,7 @@ class ButterworthFilter:
 
 
 class DataFilter:
-    def __init__(self, window_size, filter_type, gui_commands_topic):
+    def __init__(self, window_size=5, filter_type="biological", gui_commands_topic="/gui/commands"):
         """
         Initialize the DataFilter class to manage and apply various filters.
 
@@ -199,6 +203,42 @@ class DataFilter:
             raise ValueError(f"Invalid filter type '{filter_type}'. Valid options are: {self.valid_filters}")
         self.filter_type = filter_type
         rospy.loginfo(f"Set filter to {filter_type}.")
+
+    def apply_filter_to_trajectory(self, trajectory: np.ndarray, filter_type:str):
+        """
+        Apply the selected filter to an entire trajectory.
+
+        Args:
+            trajectory (np.ndarray): Trajectory data (shape: timesteps x num_signals).
+            filter_type (str): Filter to be applied (self.filter_type not used, because this needs to be used in the replay implementation in demonstration_recorder)
+
+        Returns:
+            np.ndarray: Filtered trajectory (same shape as input).
+        """
+        num_timesteps, num_signals = trajectory.shape
+
+        # Apply Butterworth filter to the entire trajectory
+        if filter_type == "butterworth":
+            # Use scipy's filtfilt for non-causal, zero-phase filtering
+            filtered_trajectory = np.zeros_like(trajectory)
+            for i in range(num_signals):
+                filtered_trajectory[:, i] = signal.filtfilt(self.butterworth.b, self.butterworth.a, trajectory[:, i])
+            return filtered_trajectory
+
+        # Apply Biological Motion Filter to the entire trajectory
+        elif filter_type == "biological":
+            # Use the trajectory length as the window size
+            biological = BiologicalMotionFilter(window_size=num_timesteps, regularization=1.0, full_traj = True)
+            return self.biological.filter(trajectory)
+
+        # Apply mean or median filtering along the entire trajectory
+        elif filter_type == "mean":
+            return np.mean(trajectory, axis=0, keepdims=True).repeat(num_timesteps, axis=0)
+        elif filter_type == "median":
+            return np.median(trajectory, axis=0, keepdims=True).repeat(num_timesteps, axis=0)
+
+        else:
+            raise ValueError(f"Filter type '{self.filter_type}' is not supported.")
 
             
     
