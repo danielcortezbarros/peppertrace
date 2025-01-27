@@ -182,6 +182,9 @@ def main():
         rospy.logerr("No valid joint states found in the bag file. Exiting.")
         sys.exit(1)
 
+    print(left_arm_angles.shape)
+    print(right_arm_angles.shape)
+
     # Filter the trajectories
     data_filter = DataFilter(filter_type=filter_type)
     filtered_left_arm_angles = data_filter.apply_filter_to_trajectory(trajectory=left_arm_angles, filter_type=filter_type)

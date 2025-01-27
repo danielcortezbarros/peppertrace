@@ -29,15 +29,15 @@ class BiologicalMotionFilter:
             window_size (int): Number of data points in the sliding window.
             regularization (float): Lambda parameter controlling the trade-off between smoothness and fidelity.
         """
-        self.window_size = window_size
+        self.window_size = 0
+        self.Q_reg = None
         self.middle_index = self.window_size // 2
         self.lambda_reg = regularization
         self.full_traj = full_traj
+        self.set_window_size(window_size=window_size) # sets window_size and Q_reg
 
-        # Construct the finite difference matrix for the third derivative (Q)
-        Q = self._construct_Q(window_size)
-        # Regularization matrix (Q + lambda * I)
-        self.Q_reg = Q + self.lambda_reg * np.eye(self.window_size)
+        
+
 
     def _construct_Q(self, size: int):
         """
@@ -67,6 +67,9 @@ class BiologicalMotionFilter:
         # Right-hand side matrix for all signals
         P = self.lambda_reg * window
 
+        print(f"Q_reg shape: {self.Q_reg.shape}")
+        print(f"P shape: {P.shape}")
+
         # Solve for all signals simultaneously
         filtered_window = np.linalg.solve(self.Q_reg, P)
 
@@ -75,6 +78,14 @@ class BiologicalMotionFilter:
             return filtered_window
         else:
             return filtered_window[self.middle_index, :]
+
+    def set_window_size(self, window_size):
+        self.window_size = window_size
+        Q = self._construct_Q(window_size)
+        self.Q_reg = Q + self.lambda_reg * np.eye(self.window_size)
+
+    def set_full_traj(self, full_traj:bool):
+        self.full_traj = full_traj
 
 
 class ButterworthFilter:
@@ -228,8 +239,9 @@ class DataFilter:
         # Apply Biological Motion Filter to the entire trajectory
         elif filter_type == "biological":
             # Use the trajectory length as the window size
-            biological = BiologicalMotionFilter(window_size=num_timesteps, regularization=1.0, full_traj = True)
-            return self.biological.filter(trajectory)
+            self.biological.set_window_size(trajectory.shape[0])
+            self.biological.set_full_traj(True)
+            return self.biological.filter(window=trajectory)
 
         # Apply mean or median filtering along the entire trajectory
         elif filter_type == "mean":
