@@ -42,6 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.trying_connection = False
         self.connected = False
         self.demonstrate_running = False
         self.demo_data_dir = demo_data_dir
@@ -95,9 +96,10 @@ class MainWindow(QtWidgets.QMainWindow):
         Args:
             cmd(str): command to send to the system. 
         """
-        if cmd == 'CONNECT':
+        if cmd == 'CONNECT' and self.trying_connect is False:
             cmd= cmd + ',{},{}'.format(self.ui.robotIP.text(), self.ui.port.text())
             self.ros_thread.publish_signal.emit(cmd)
+            self.trying_connect = True
 
         if cmd == 'START_DEMONSTRATE':
             if self.connected == False:
@@ -248,6 +250,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.connected = True
                     self.ui.connectButton.setText("DISCONNECT")
                     self.ui.connectedIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'green.png')))
+                    self.trying_connect = False
                 elif "ROBOT DISCONNECTED" in info:
                     self.connected = False
                     self.ui.connectButton.setText("CONNECT")
