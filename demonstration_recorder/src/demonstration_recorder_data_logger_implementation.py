@@ -94,8 +94,8 @@ class PepperROS1Logger():
                 rospy.loginfo(f"Recording topics: {self.topics_list}")
 
                 # Build the rosbag record command
-                # rosbag_command = ["rosbag", "record", "-O", bag_file] + self.topics_list
-                rosbag_command = ["rosbag", "record", "-O", bag_file] + ["/test_topic"]
+                rosbag_command = ["rosbag", "record", "-O", bag_file] + self.topics_list
+                # rosbag_command = ["rosbag", "record", "-O", bag_file] + ["/test_topic"]
 
                 # Start the recording process
                 self.record_process = subprocess.Popen(rosbag_command)
