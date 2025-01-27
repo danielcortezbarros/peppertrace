@@ -42,7 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.trying_connection = False
+        self.trying_connect = False
         self.connected = False
         self.demonstrate_running = False
         self.demo_data_dir = demo_data_dir
@@ -101,13 +101,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ros_thread.publish_signal.emit(cmd)
             self.trying_connect = True
 
-        if cmd == 'START_DEMONSTRATE':
+        elif cmd == 'START_DEMONSTRATE':
             if self.connected == False:
                 self.display_info("[WARNING] Please connect to the robot before demonstrating.")  
             else:
                 self.ros_thread.publish_signal.emit(cmd)
 
-        if cmd =='START_RECORD':
+        elif cmd =='START_RECORD':
             if self.ui.demoName.text() == '':
                 self.display_info("[WARNING] Please set the Demo Name before recording.")    
                 return
