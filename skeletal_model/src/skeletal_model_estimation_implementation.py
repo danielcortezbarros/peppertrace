@@ -170,7 +170,7 @@ class SkeletalModelEstimation:
 
             if angles is not None:
                 filtered_angles = self.filter.get_filtered_angles(angles)
-                print(filtered_angles)
+                # print(filtered_angles)
             else:
                 rospy.loginfo("Landmarks could not be calculated")
                 return
@@ -278,8 +278,8 @@ class SkeletalModelEstimation:
             return None
 
         # Calculate Neck and MidHip
-        Neck = mid_point(LShoulder, RShoulder)
-        MidHip = mid_point(LHip, RHip)
+        Neck = np.array(mid_point(LShoulder, RShoulder))
+        MidHip = np.array(mid_point(LHip, RHip))
 
         # Now construct the wp_dict
         wp_dict = {
@@ -296,7 +296,7 @@ class SkeletalModelEstimation:
         # Finally, call the get_angles function
 
         angles = self.retargeting.get_angles(wp_dict)
-        angles = {
+        angles_dict = {
             'LShoulderPitch': angles[0],
             'LShoulderRoll': angles[1],
             'LElbowRoll': angles[2],
@@ -308,11 +308,23 @@ class SkeletalModelEstimation:
             'RElbowYaw': angles[7],
             'RWristYaw': 0
         }
+        angles_print = {
+            'LShoulderPitch': angles[0],
+            'LShoulderRoll': angles[1],
+            'LElbowRoll': angles[2],
+            'LElbowYaw': angles[3],
+            'RShoulderPitch': angles[4],
+            'RShoulderRoll': angles[5],
+            'RElbowRoll': angles[6],
+            'RElbowYaw': angles[7],
+        }
 
-        print(angles)
 
-        angles = np.array(list(angles.values()))
+        colors = ["[91m", "[92m", "[93m", "[94m", "[91m", "[92m", "[93m", "[94m"]
+        for i, (joint, angles_print) in enumerate(angles_print.items()):
+            rospy.loginfo(f"{colors[i]}{joint}: {angles_print}[0m")
 
+        angles = np.array(list(angles_dict.values()))
 
         return angles
     
