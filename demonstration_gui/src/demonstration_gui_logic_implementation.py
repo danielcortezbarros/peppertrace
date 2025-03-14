@@ -15,8 +15,8 @@ This program comes with ABSOLUTELY NO WARRANTY.
 """
 
 from PyQt5 import QtWidgets, QtGui, QtCore
-from PyQt5.QtGui import QImage, QPixmap
-from demonstration_gui_elements import Ui_MainWindow
+from PyQt5.QtGui import QImage, QPixmap, QIcon
+from demonstration_gui_elements_implementation import Ui_MainWindow
 import json
 from demonstration_gui_ros_interface_implementation import RosThread
 import rospkg
@@ -25,6 +25,7 @@ import numpy as np
 import cv2
 import rospy
 import time
+import re
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -56,6 +57,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.connectedIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
         self.ui.demonstrateIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
         self.ui.recordIcon.setPixmap(QtGui.QPixmap(os.path.join(self.gui_images_path, 'red.png')))
+        self.ui.refreshDemoListButton.setIcon(QIcon(os.path.join(self.gui_images_path, 'refresh.png')))
+        self.ui.deleteDemoButton.setIcon(QIcon(os.path.join(self.gui_images_path, 'trash.png')))
 
         self.ros_thread = RosThread(topic_sub=gui_system_logs_topic, topic_pub=gui_commands_topic, skeletal_model_feed_topic=skeletal_model_feed_topic)
         self.ros_thread.start()
@@ -77,8 +80,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.ui.browseButton.clicked.connect(self.open_file_dialog)
         self.ui.clearLogsButton.clicked.connect(self.clear_systems_log_box)
         self.ui.refreshDemoListButton.clicked.connect(self.update_demo_list)
+        self.ui.deleteDemoButton.clicked.connect(self.delete_demo)
         self.ui.biomoRadio.toggled.connect(self.update_filter)
         self.ui.butterworthRadio.toggled.connect(self.update_filter)
+        self.ui.noFilterRadio.toggled.connect(self.update_filter)
         self.ui.estimatedAnglesCheck.stateChanged.connect(self.update_data_to_record)
         self.ui.measuredAnglesCheck.stateChanged.connect(self.update_data_to_record)
 
@@ -172,6 +177,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.demoList.clear()
         self.ui.demoList.addItems(demo_list)
 
+    def delete_demo(self):
+        demo_to_delete = self.get_selected_demo()
+
+        if demo_to_delete is None:
+            self.display_info(f"[WARNING] Please select a demo to delete.")
+            return
+        
+        print(demo_to_delete)
+
+        base_demo_name = re.sub(r'\d+$', '', demo_to_delete) #remove digits
+        file_path = os.path.join(self.demo_data_dir, base_demo_name, f"{demo_to_delete}.bag")
+        print(file_path)
+            
+        if not file_path or not os.path.exists(file_path):
+            self.display_info(f"[ERROR] Cannot delete: {file_path} does not exist.")
+        else:
+            os.remove(file_path)
+            self.display_info(f"Deleted: {file_path}")
+            self.update_demo_list()
+
+
     def clear_systems_log_box(self):
         self.ui.systemLogsBox.clear()
 
@@ -187,8 +213,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if sender.isChecked():
             if sender.text() == "Biological Motion":
                 self.ros_thread.publish_signal.emit("FILTERbiological")
-            else:
+            elif sender.text() == "Butterworth Filter":
                 self.ros_thread.publish_signal.emit("FILTERbutterworth")
+            else:
+                self.ros_thread.publish_signal.emit("FILTERno")
+
 
     def update_data_to_record(self):
         """Construct and publish what types of data to record based on checked checkboxes."""

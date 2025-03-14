@@ -229,7 +229,10 @@ class DataFilter:
         num_timesteps, num_signals = trajectory.shape
 
         # Apply Butterworth filter to the entire trajectory
-        if filter_type == "butterworth":
+        if filter_type == "no":
+            return trajectory
+        
+        elif filter_type == "butterworth":
             # Use scipy's filtfilt for non-causal, zero-phase filtering
             filtered_trajectory = np.zeros_like(trajectory)
             for i in range(num_signals):
