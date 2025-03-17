@@ -176,6 +176,7 @@ class MainWindow(QtWidgets.QMainWindow):
         demo_list = self.get_demo_list()
         self.ui.demoList.clear()
         self.ui.demoList.addItems(demo_list)
+        
 
     def delete_demo(self):
         demo_to_delete = self.get_selected_demo()
@@ -183,19 +184,29 @@ class MainWindow(QtWidgets.QMainWindow):
         if demo_to_delete is None:
             self.display_info(f"[WARNING] Please select a demo to delete.")
             return
-        
+
         print(demo_to_delete)
 
-        base_demo_name = re.sub(r'\d+$', '', demo_to_delete) #remove digits
+        # Remove digits from the demo name
+        base_demo_name = re.sub(r'\d+$', '', demo_to_delete)
         file_path = os.path.join(self.demo_data_dir, base_demo_name, f"{demo_to_delete}.bag")
         print(file_path)
-            
-        if not file_path or not os.path.exists(file_path):
+
+        # Check if the file exists before attempting to delete
+        if not os.path.exists(file_path):
             self.display_info(f"[ERROR] Cannot delete: {file_path} does not exist.")
         else:
             os.remove(file_path)
             self.display_info(f"Deleted: {file_path}")
-            self.update_demo_list()
+
+            # Check if the base_demo_name directory is empty
+            base_demo_path = os.path.join(self.demo_data_dir, base_demo_name)
+            if os.path.exists(base_demo_path) and not os.listdir(base_demo_path):  # Directory is empty
+                os.rmdir(base_demo_path)  # Remove the empty directory
+                self.display_info(f"Deleted empty directory: {base_demo_path}")
+
+        # Refresh the demo list
+        self.update_demo_list()
 
 
     def clear_systems_log_box(self):

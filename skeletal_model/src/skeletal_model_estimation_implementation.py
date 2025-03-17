@@ -149,8 +149,8 @@ class SkeletalModelEstimation:
             return
 
         try:
-            rospy.loginfo("Received image at timestamp: %s", image_data.header.stamp)
-            rospy.loginfo("Received depth at timestamp: %s", depth_data.header.stamp)
+            #rospy.loginfo("Received image at timestamp: %s", image_data.header.stamp)
+            #rospy.loginfo("Received depth at timestamp: %s", depth_data.header.stamp)
 
             # Convert ROS Image message to OpenCV image for both color and depth
             bgr_image = self.bridge.imgmsg_to_cv2(image_data, "bgr8")

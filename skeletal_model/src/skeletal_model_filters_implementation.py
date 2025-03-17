@@ -151,7 +151,7 @@ class DataFilter:
         self.full = False
 
         self.filter_type = filter_type
-        self.valid_filters = ["mean", "median", "biological", "butterworth"]
+        self.valid_filters = ["no", "mean", "median", "biological", "butterworth"]
         gui_sub = rospy.Subscriber(gui_commands_topic, String, self.gui_callback)
 
         self.butterworth = ButterworthFilter(order=1, cutoff=0.7, sampling_rate=5.3, window_size=self.window_size)
@@ -167,6 +167,10 @@ class DataFilter:
         Returns:
             np.ndarray: Filtered angles (if enough data points are available), otherwise None.
         """
+
+        if self.filter == "no":
+            return data_point
+        
         self.window[:-1] = self.window[1:]
         self.window[-1] = data_point
 
