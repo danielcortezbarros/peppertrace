@@ -168,7 +168,7 @@ class DataFilter:
             np.ndarray: Filtered angles (if enough data points are available), otherwise None.
         """
 
-        if self.filter == "no":
+        if self.filter_type == "no":
             return data_point
         
         self.window[:-1] = self.window[1:]

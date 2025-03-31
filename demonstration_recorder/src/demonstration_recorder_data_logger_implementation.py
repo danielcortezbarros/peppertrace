@@ -264,7 +264,7 @@ class PepperROS1Logger():
             # set topics_list
             filter_type = event.args["filter_type"]
             self.filter_type=filter_type
-            information = f'Changed filter to: {",".join(filter_type)} '
+            information = f'Changed filter to: {filter_type} '
             
 
         else:
